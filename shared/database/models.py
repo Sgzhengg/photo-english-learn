@@ -12,8 +12,8 @@ Base = declarative_base()
 
 
 def utc_now():
-    """获取当前 UTC 时间"""
-    return datetime.now(timezone.utc)
+    """获取当前 UTC 时间（不带时区信息）"""
+    return datetime.now(timezone.utc).replace(tzinfo=None)
 
 
 # SQLAlchemy Models
