@@ -12,7 +12,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 from datetime import datetime, timedelta
-from typing import Annotated
+from typing import Annotated, Optional
 import os
 
 from shared.database.models import User, UserCreate, UserLogin, UserResponse, Token
