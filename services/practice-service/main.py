@@ -11,7 +11,7 @@ from fastapi import FastAPI, Depends, HTTPException, status, Query
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select, and_
-from typing import Annotated, List
+from typing import Annotated, List, Optional
 from datetime import datetime
 
 from shared.database.models import (
