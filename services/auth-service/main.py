@@ -55,6 +55,12 @@ async def root():
     return success_response(data={"message": "Auth Service is running", "service": "auth"})
 
 
+@app.get("/health", tags=["Health"])
+async def health():
+    """健康检查 - 详细状态"""
+    return {"status": "ok", "service": "auth"}
+
+
 @app.post("/register", response_model=Token, tags=["Auth"])
 async def register(
     user_data: UserCreate,
@@ -68,6 +74,14 @@ async def register(
     - **password**: 密码
     - **nickname**: 昵称（可选）
     """
+    # 验证密码长度（bcrypt哈希后的密码不能超过72字节）
+    password_bytes = len(user_data.password.encode('utf-8'))
+    if password_bytes > 72:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="密码长度不能超过72字节（当前：" + str(password_bytes) + "字节）"
+        )
+
     # 检查用户名是否已存在
     result = await db.execute(select(User).where(User.username == user_data.username))
     if result.scalar_one_or_none():
