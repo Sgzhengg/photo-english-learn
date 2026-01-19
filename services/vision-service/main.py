@@ -75,60 +75,83 @@ async def analyze_scene(
     - 检测到的物体列表（包含位置、置信度）
     - 场景描述
     """
-    # 读取图片数据
-    image_data = await image.read()
+    import logging
+    logger = logging.getLogger(__name__)
 
-    # 上传图片到对象存储（这里简化为 base64，实际应使用 MinIO/S3）
-    # TODO: 集成 MinIO 或 S3
-    image_base64 = base64.b64encode(image_data).decode('utf-8')
-    image_url = f"data:{image.content_type};base64,{image_base64}"
+    try:
+        # 读取图片数据
+        image_data = await image.read()
+        logger.info(f"收到图片分析请求，大小: {len(image_data)} 字节")
 
-    # 使用目标检测模型检测物体
-    detections = detector.detect_objects(image_data)
+        # 上传图片到对象存储（这里简化为 base64，实际应使用 MinIO/S3）
+        # TODO: 集成 MinIO 或 S3
+        image_base64 = base64.b64encode(image_data).decode('utf-8')
+        image_url = f"data:{image.content_type};base64,{image_base64}"
 
-    # 创建场景记录
-    new_scene = Scene(
-        user_id=current_user.user_id if current_user else 1,
-        image_url=image_url,
-        description=description or scene_understanding.generate_description(image_data, detections)
-    )
-    db.add(new_scene)
-    await db.commit()
-    await db.refresh(new_scene)
+        # 使用目标检测模型检测物体
+        logger.info("开始检测物体...")
+        detections = detector.detect_objects(image_data)
+        logger.info(f"检测到 {len(detections)} 个物体")
 
-    # 保存检测到的物体
-    detected_objects = []
-    for det in detections:
-        obj = DetectedObject(
-            scene_id=new_scene.scene_id,
-            object_name=det['name'],
-            english_word=det['english_word'],
-            confidence=det['confidence'],
-            bounding_box=det.get('bbox')
+        # 获取用户 ID（如果已登录）
+        user_id = 1
+        if current_user:
+            user_id = current_user.user_id
+            logger.info(f"用户已登录: {current_user.username}")
+        else:
+            logger.info("用户未登录，使用默认用户 ID: 1")
+
+        # 创建场景记录
+        new_scene = Scene(
+            user_id=user_id,
+            image_url=image_url,
+            description=description or scene_understanding.generate_description(image_data, detections)
         )
-        db.add(obj)
-        detected_objects.append(obj)
+        db.add(new_scene)
+        await db.commit()
+        await db.refresh(new_scene)
+        logger.info(f"创建场景记录: scene_id={new_scene.scene_id}")
 
-    await db.commit()
-    await db.refresh(new_scene)
+        # 保存检测到的物体
+        detected_objects = []
+        for det in detections:
+            obj = DetectedObject(
+                scene_id=new_scene.scene_id,
+                object_name=det['name'],
+                english_word=det['english_word'],
+                confidence=det['confidence'],
+                bounding_box=det.get('bbox')
+            )
+            db.add(obj)
+            detected_objects.append(obj)
 
-    return SceneResponse(
-        scene_id=new_scene.scene_id,
-        user_id=new_scene.user_id,
-        image_url=new_scene.image_url,
-        description=new_scene.description,
-        created_at=new_scene.created_at,
-        detected_objects=[
-            DetectedObjectResponse(
-                object_id=obj.object_id,
-                scene_id=obj.scene_id,
-                object_name=obj.object_name,
-                english_word=obj.english_word,
-                confidence=obj.confidence,
-                bounding_box=obj.bounding_box
-            ) for obj in detected_objects
-        ]
-    )
+        await db.commit()
+        await db.refresh(new_scene)
+        logger.info(f"保存了 {len(detected_objects)} 个物体")
+
+        return SceneResponse(
+            scene_id=new_scene.scene_id,
+            user_id=new_scene.user_id,
+            image_url=new_scene.image_url,
+            description=new_scene.description,
+            created_at=new_scene.created_at,
+            detected_objects=[
+                DetectedObjectResponse(
+                    object_id=obj.object_id,
+                    scene_id=obj.scene_id,
+                    object_name=obj.object_name,
+                    english_word=obj.english_word,
+                    confidence=obj.confidence,
+                    bounding_box=obj.bounding_box
+                ) for obj in detected_objects
+            ]
+        )
+    except Exception as e:
+        logger.error(f"图片分析失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"图片分析失败: {str(e)}"
+        )
 
 
 @app.get("/objects/{scene_id}", response_model=List[DetectedObjectResponse], tags=["Vision"])
