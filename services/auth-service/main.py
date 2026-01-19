@@ -74,9 +74,13 @@ async def register(
     - **password**: 密码
     - **nickname**: 昵称（可选）
     """
+    import logging
+    logger = logging.getLogger(__name__)
+
     # 验证密码长度（bcrypt哈希后的密码不能超过72字节）
     password_bytes = len(user_data.password.encode('utf-8'))
     if password_bytes > 72:
+        logger.error(f"注册失败: 密码过长 ({password_bytes} 字节)")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="密码长度不能超过72字节（当前：" + str(password_bytes) + "字节）"
@@ -85,6 +89,7 @@ async def register(
     # 检查用户名是否已存在
     result = await db.execute(select(User).where(User.username == user_data.username))
     if result.scalar_one_or_none():
+        logger.error(f"注册失败: 用户名已存在 ({user_data.username})")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="用户名已存在"
@@ -93,10 +98,13 @@ async def register(
     # 检查邮箱是否已存在
     result = await db.execute(select(User).where(User.email == user_data.email))
     if result.scalar_one_or_none():
+        logger.error(f"注册失败: 邮箱已被注册 ({user_data.email})")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="邮箱已被注册"
         )
+
+    logger.info(f"开始注册用户: {user_data.username}, {user_data.email}")
 
     # 创建新用户
     new_user = User(
