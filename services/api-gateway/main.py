@@ -1,0 +1,213 @@
+"""
+API Gateway - API网关服务
+统一入口，代理所有后端服务请求
+"""
+import sys
+from pathlib import Path
+
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from fastapi import FastAPI, Request, Response, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
+import httpx
+import os
+from typing import Dict
+import logging
+
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
+# 初始化 FastAPI 应用
+app = FastAPI(
+    title="API Gateway",
+    description="API网关 - 统一入口代理所有服务",
+    version="1.0.0"
+)
+
+# CORS 配置 - 允许所有前端域名
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://localhost:5174",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+        "*",  # 允许所有来源（生产环境应该限制）
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# 后端服务 URLs (从环境变量获取，使用默认值)
+SERVICE_URLS = {
+    "auth": os.getenv("AUTH_SERVICE_URL", "https://photo-english-learn-auth-service.zeabur.app"),
+    "vision": os.getenv("VISION_SERVICE_URL", "https://vision-service.zeabur.app"),
+    "word": os.getenv("WORD_SERVICE_URL", "https://word-service.zeabur.app"),
+    "practice": os.getenv("PRACTICE_SERVICE_URL", "https://practice-service.zeabur.app"),
+    "tts": os.getenv("TTS_SERVICE_URL", "https://tts-service.zeabur.app"),
+}
+
+# 路由前缀映射
+ROUTE_PREFIXES = {
+    "auth": ["/auth", "/register", "/login", "/refresh", "/me"],
+    "vision": ["/vision", "/analyze", "/scenes", "/objects"],
+    "word": ["/word", "/words", "/tags"],
+    "practice": ["/practice", "/generate", "/sentences", "/review", "/progress"],
+    "tts": ["/tts", "/synthesize", "/voices"],
+}
+
+
+def determine_service(path: str) -> str:
+    """根据路径确定目标服务"""
+    path = path.lower()
+
+    # 精确匹配
+    for service, prefixes in ROUTE_PREFIXES.items():
+        for prefix in prefixes:
+            if path == prefix or path.startswith(prefix + "/"):
+                return service
+
+    # 默认返回 auth
+    return "auth"
+
+
+@app.get("/")
+async def root():
+    """网关健康检查"""
+    return {
+        "code": 0,
+        "message": "API Gateway is running",
+        "data": {
+            "service": "api-gateway",
+            "services": list(SERVICE_URLS.keys()),
+            "status": "healthy"
+        }
+    }
+
+
+@app.get("/health")
+async def health_check():
+    """检查所有后端服务的健康状态"""
+    results = {}
+    async with httpx.AsyncClient(timeout=10.0) as client:
+        for service_name, service_url in SERVICE_URLS.items():
+            try:
+                response = await client.get(f"{service_url}/")
+                results[service_name] = {
+                    "status": "healthy" if response.status_code == 200 else "unhealthy",
+                    "url": service_url,
+                    "response_time": response.elapsed.total_seconds()
+                }
+            except Exception as e:
+                results[service_name] = {
+                    "status": "down",
+                    "url": service_url,
+                    "error": str(e)
+                }
+
+    return {
+        "code": 0,
+        "message": "Health check completed",
+        "data": results
+    }
+
+
+@app.api_route("/{path:path}", methods=["GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"])
+async def proxy_request(path: str, request: Request):
+    """
+    代理所有请求到相应的后端服务
+
+    路由规则:
+    - /register, /login, /refresh, /me -> auth service
+    - /analyze, /scenes, /objects -> vision service
+    - /word, /words, /tags -> word service
+    - /generate, /sentences, /review, /progress -> practice service
+    - /synthesize, /voices -> tts service
+    """
+    # 确定目标服务
+    service_name = determine_service("/" + path)
+    service_url = SERVICE_URLS.get(service_name)
+
+    if not service_url:
+        raise HTTPException(status_code=503, detail=f"Service {service_name} not configured")
+
+    # 构建目标URL
+    target_url = f"{service_url}/{path}"
+
+    logger.info(f"Proxying {request.method} {path} -> {service_name} service")
+
+    try:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            # 转发请求
+            response = await client.request(
+                method=request.method,
+                url=target_url,
+                headers={k: v for k, v in request.headers.items() if k.lower() != "host"},
+                content=await request.body(),
+                params=request.query_params
+            )
+
+            # 返回响应
+            return JSONResponse(
+                content=response.json(),
+                status_code=response.status_code,
+                headers=dict(response.headers)
+            )
+
+    except httpx.TimeoutException:
+        logger.error(f"Timeout proxying to {service_name} service")
+        return JSONResponse(
+            status_code=504,
+            content={
+                "code": -1,
+                "message": f"请求超时：{service_name} 服务响应时间过长",
+                "data": None
+            }
+        )
+
+    except httpx.HTTPError as e:
+        logger.error(f"HTTP error proxying to {service_name}: {e}")
+        return JSONResponse(
+            status_code=502,
+            content={
+                "code": -1,
+                "message": f"无法连接到 {service_name} 服务",
+                "data": {"error": str(e)}
+            }
+        )
+
+    except Exception as e:
+        logger.error(f"Unexpected error: {e}")
+        return JSONResponse(
+            status_code=500,
+            content={
+                "code": -1,
+                "message": "网关内部错误",
+                "data": {"error": str(e)}
+            }
+        )
+
+
+@app.exception_handler(Exception)
+async def global_exception_handler(request: Request, exc: Exception):
+    """全局异常处理"""
+    logger.error(f"Unhandled exception: {exc}")
+    return JSONResponse(
+        status_code=500,
+        content={
+            "code": -1,
+            "message": "服务器内部错误",
+            "data": {"detail": str(exc)}
+        }
+    )
+
+
+if __name__ == "__main__":
+    import uvicorn
+    port = int(os.getenv("PORT", "8080"))
+    uvicorn.run(app, host="0.0.0.0", port=port)
