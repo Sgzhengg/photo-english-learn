@@ -30,8 +30,15 @@ app = FastAPI(
 # CORS 配置
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],  # 生产环境应设置具体域名
-    allow_credentials=False,
+    allow_origins=[
+        "http://localhost:5173",  # Vite 默认端口
+        "http://localhost:3000",  # 其他常用端口
+        "http://localhost:5174",  # 备用端口
+        "http://127.0.0.1:5173",
+        "http://127.0.0.1:3000",
+        "*",  # 开发环境允许所有来源
+    ],
+    allow_credentials=False,  # 使用 False 时可以用 "*"
     allow_methods=["*"],
     allow_headers=["*"],
 )
