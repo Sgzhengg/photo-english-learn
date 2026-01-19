@@ -59,7 +59,7 @@ async def root():
     return success_response(data={"message": "Practice Service is running", "service": "practice"})
 
 
-@app.post("/generate", response_model=SceneSentenceResponse, tags=["Practice"])
+@app.post("/practice/generate", response_model=SceneSentenceResponse, tags=["Practice"])
 async def generate_sentence(
     scene_id: int,
     difficulty: str = Query("beginner", description="难度: beginner, intermediate, advanced"),
@@ -115,7 +115,7 @@ async def generate_sentence(
     return SceneSentenceResponse.model_validate(new_sentence)
 
 
-@app.get("/sentences/{scene_id}", response_model=List[SceneSentenceResponse], tags=["Practice"])
+@app.get("/practice/sentences/{scene_id}", response_model=List[SceneSentenceResponse], tags=["Practice"])
 async def get_scene_sentences(
     scene_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
@@ -134,7 +134,7 @@ async def get_scene_sentences(
     return [SceneSentenceResponse.model_validate(s) for s in sentences]
 
 
-@app.get("/review", response_model=List[ReviewRecordResponse], tags=["Practice"])
+@app.get("/practice/review", response_model=List[ReviewRecordResponse], tags=["Practice"])
 async def get_review_list(
     limit: int = Query(20, ge=1, le=100, description="返回数量"),
     current_user: Annotated[Optional[User], Depends(get_current_user_optional)] = None,
@@ -167,7 +167,7 @@ async def get_review_list(
     return response
 
 
-@app.post("/review/{word_id}", response_model=dict, tags=["Practice"])
+@app.post("/practice/review/{word_id}", response_model=dict, tags=["Practice"])
 async def submit_review(
     word_id: int,
     is_correct: bool,
@@ -191,7 +191,7 @@ async def submit_review(
     })
 
 
-@app.get("/progress", tags=["Practice"])
+@app.get("/practice/progress", tags=["Practice"])
 async def get_progress(
     current_user: Annotated[User, Depends(get_current_user)],
     db: AsyncSession = Depends(get_async_db)
