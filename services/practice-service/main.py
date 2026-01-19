@@ -145,26 +145,40 @@ async def get_review_list(
 
     基于艾宾浩斯遗忘曲线，返回需要复习的单词
     """
-    if not current_user:
-        return []
-    records = await get_due_reviews(db, current_user.user_id, limit)
+    import logging
+    logger = logging.getLogger(__name__)
 
-    # 加载单词信息
-    response = []
-    for record in records:
-        await db.refresh(record, ["word"])
-        response.append(ReviewRecordResponse(
-            record_id=record.record_id,
-            user_id=record.user_id,
-            word_id=record.word_id,
-            level=record.level,
-            next_review_time=record.next_review_time,
-            total_correct=record.total_correct,
-            total_wrong=record.total_wrong,
-            word=record.word
-        ))
+    try:
+        if not current_user:
+            logger.info("用户未登录，返回空复习列表")
+            return []
 
-    return response
+        logger.info(f"获取用户 {current_user.username} 的复习列表，限制 {limit} 条")
+        records = await get_due_reviews(db, current_user.user_id, limit)
+        logger.info(f"找到 {len(records)} 条待复习记录")
+
+        # 加载单词信息
+        response = []
+        for record in records:
+            await db.refresh(record, ["word"])
+            response.append(ReviewRecordResponse(
+                record_id=record.record_id,
+                user_id=record.user_id,
+                word_id=record.word_id,
+                level=record.level,
+                next_review_time=record.next_review_time,
+                total_correct=record.total_correct,
+                total_wrong=record.total_wrong,
+                word=record.word
+            ))
+
+        return response
+    except Exception as e:
+        logger.error(f"获取复习列表失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取复习列表失败: {str(e)}"
+        )
 
 
 @app.post("/practice/review/{word_id}", response_model=dict, tags=["Practice"])
@@ -205,8 +219,20 @@ async def get_progress(
     - total_correct: 总正确次数
     - total_wrong: 总错误次数
     """
-    progress = await get_review_progress(db, current_user.user_id)
-    return success_response(data=progress)
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        logger.info(f"获取用户 {current_user.username} 的学习进度")
+        progress = await get_review_progress(db, current_user.user_id)
+        logger.info(f"学习进度: {progress}")
+        return success_response(data=progress)
+    except Exception as e:
+        logger.error(f"获取学习进度失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"获取学习进度失败: {str(e)}"
+        )
 
 
 if __name__ == "__main__":
