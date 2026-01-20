@@ -22,7 +22,7 @@ def get_database_url(async_mode: bool = True) -> str:
         port = os.getenv("POSTGRES_PORT", "5432")
         user = os.getenv("POSTGRES_USER", "photo_english")
         password = os.getenv("POSTGRES_PASSWORD", "default_password_123")
-        database = os.getenv("POSTGRES_DB", "photo_english")
+        database = os.getenv("POSTGRES_DB", "zeabur")  # 默认连接到 zeabur 数据库
 
         if async_mode:
             return f"postgresql+asyncpg://{user}:{password}@{host}:{port}/{database}"
