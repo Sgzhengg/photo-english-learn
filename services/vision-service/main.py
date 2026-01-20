@@ -21,6 +21,7 @@ from shared.database.models import User, Scene, DetectedObject, SceneCreate, Sce
 from shared.database.database import get_async_db
 from shared.utils.auth import get_current_user, get_current_user_optional
 from shared.utils.response import success_response
+from shared.utils.rate_limit import limit_expensive
 from shared.vision.detector import ObjectDetector
 from shared.vision.scene_understanding import SceneUnderstanding
 
@@ -59,6 +60,7 @@ async def root():
 
 
 @app.post("/analyze", response_model=SceneResponse, tags=["Vision"])
+@limit_expensive(max_requests=10, window_seconds=60)  # 图片分析限流：10 次/分钟
 async def analyze_scene(
     image: UploadFile = File(...),
     description: Optional[str] = Form(None),
@@ -74,6 +76,8 @@ async def analyze_scene(
     返回：
     - 检测到的物体列表（包含位置、置信度）
     - 场景描述
+
+    限流：每个用户/IP 每分钟最多 10 次
     """
     import logging
     logger = logging.getLogger(__name__)

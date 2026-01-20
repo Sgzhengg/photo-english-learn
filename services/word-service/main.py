@@ -3,6 +3,7 @@
 """
 import sys
 from pathlib import Path
+import logging
 
 # 添加项目根目录到 Python 路径（支持 Zeabur 部署）
 sys.path.insert(0, str(Path(__file__).parent.parent))
@@ -21,7 +22,10 @@ from shared.database.models import (
 from shared.database.database import get_async_db
 from shared.utils.auth import get_current_user, get_current_user_optional
 from shared.utils.response import success_response
+from shared.utils.cache import cached, CachePolicy
 from shared.word.dictionary import DictionaryAPI
+
+logger = logging.getLogger(__name__)
 
 # 初始化 FastAPI 应用
 app = FastAPI(
@@ -90,6 +94,8 @@ async def lookup_word(
     查询单词（如果数据库中没有，会从词典 API 获取并保存）
 
     - **english_word**: 英文单词
+
+    使用缓存策略：单词查询结果缓存 24 小时
     """
     # 先查数据库
     result = await db.execute(
@@ -98,9 +104,11 @@ async def lookup_word(
     word = result.scalar_one_or_none()
 
     if word:
+        logger.info(f"单词从数据库获取: {english_word}")
         return WordResponse.model_validate(word)
 
     # 从词典 API 获取
+    logger.info(f"从词典 API 获取单词: {english_word}")
     word_data = await dictionary.lookup(english_word)
     if not word_data:
         raise HTTPException(
@@ -114,6 +122,17 @@ async def lookup_word(
     await db.commit()
     await db.refresh(new_word)
 
+    # 尝试缓存到 Redis
+    try:
+        from shared.utils.cache import get_cache
+        cache = get_cache()
+        if cache and await cache.is_available():
+            cache_key = f"word_lookup:{english_word.lower()}"
+            await cache.set(cache_key, WordResponse.model_validate(new_word).model_dump(), CachePolicy.WORD_LOOKUP_TTL)
+            logger.info(f"单词已缓存: {english_word}")
+    except Exception as e:
+        logger.warning(f"缓存单词失败: {e}")
+
     return WordResponse.model_validate(new_word)
 
 
@@ -123,11 +142,27 @@ async def get_tags(
 ):
     """
     获取所有标签
+
+    使用缓存策略：标签列表缓存 24 小时
     """
+    # 尝试从缓存获取
+    try:
+        from shared.utils.cache import get_cache
+        cache = get_cache()
+        if cache and await cache.is_available():
+            cache_key = "tags_list"
+            cached_tags = await cache.get(cache_key)
+            if cached_tags:
+                logger.info("标签列表从缓存获取")
+                return cached_tags
+    except Exception as e:
+        logger.debug(f"读取标签缓存失败: {e}")
+
+    # 从数据库获取
     result = await db.execute(select(TagModel))
     tags = result.scalars().all()
 
-    return [
+    tags_list = [
         {
             "tag_id": tag.tag_id,
             "tag_name": tag.tag_name,
@@ -135,6 +170,17 @@ async def get_tags(
             "color": tag.color
         } for tag in tags
     ]
+
+    # 缓存结果
+    try:
+        cache = get_cache()
+        if cache and await cache.is_available():
+            await cache.set("tags_list", tags_list, CachePolicy.TAGS_LIST_TTL)
+            logger.info("标签列表已缓存")
+    except Exception as e:
+        logger.debug(f"缓存标签列表失败: {e}")
+
+    return tags_list
 
 
 @app.get("/list", response_model=List[UserWordResponse], tags=["Words"])

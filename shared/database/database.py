@@ -8,6 +8,9 @@ from sqlalchemy.ext.asyncio import create_async_engine, AsyncSession, async_sess
 from typing import Generator, AsyncGenerator
 import os
 from contextlib import asynccontextmanager
+import logging
+
+logger = logging.getLogger(__name__)
 
 # 数据库配置 (自动检测使用 PostgreSQL 或 MySQL)
 def get_database_url(async_mode: bool = True) -> str:
@@ -106,3 +109,23 @@ async def get_async_db_context():
         except Exception:
             await session.rollback()
             raise
+
+
+# 初始化 Redis 缓存
+def init_redis_cache():
+    """初始化 Redis 缓存（如果配置了）"""
+    redis_url = os.getenv("REDIS_URL")
+
+    if redis_url:
+        try:
+            from shared.utils.cache import init_cache
+            init_cache(redis_url)
+            logger.info(f"Redis 缓存已初始化: {redis_url}")
+        except Exception as e:
+            logger.warning(f"Redis 缓存初始化失败: {e}")
+    else:
+        logger.info("未配置 REDIS_URL，缓存功能禁用")
+
+
+# 自动初始化 Redis（在模块加载时）
+init_redis_cache()

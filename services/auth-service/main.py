@@ -19,6 +19,7 @@ from shared.database.models import User, UserCreate, UserLogin, UserResponse, To
 from shared.database.database import get_async_db
 from shared.utils.auth import hash_password, verify_password, create_access_token, get_current_user
 from shared.utils.response import success_response
+from shared.utils.rate_limit import limit_auth
 
 # 初始化 FastAPI 应用
 app = FastAPI(
@@ -62,6 +63,7 @@ async def health():
 
 
 @app.post("/register", response_model=Token, tags=["Auth"])
+@limit_auth(max_requests=10, window_seconds=60)  # 注册限流：10 次/分钟
 async def register(
     user_data: UserCreate,
     db: AsyncSession = Depends(get_async_db)
@@ -73,6 +75,8 @@ async def register(
     - **email**: 邮箱（唯一）
     - **password**: 密码
     - **nickname**: 昵称（可选）
+
+    限流：每个 IP 每分钟最多 10 次注册请求
     """
     import logging
     logger = logging.getLogger(__name__)
@@ -132,6 +136,7 @@ async def register(
 
 
 @app.post("/login", response_model=Token, tags=["Auth"])
+@limit_auth(max_requests=20, window_seconds=60)  # 登录限流：20 次/分钟
 async def login(
     user_data: UserLogin,
     db: AsyncSession = Depends(get_async_db)
@@ -141,6 +146,8 @@ async def login(
 
     - **username**: 用户名
     - **password**: 密码
+
+    限流：每个 IP 每分钟最多 20 次登录请求
     """
     # 查找用户
     result = await db.execute(
