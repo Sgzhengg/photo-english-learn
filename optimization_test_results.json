@@ -1,0 +1,42 @@
+[
+  {
+    "test": "Auth Service 健康检查",
+    "passed": false,
+    "details": "状态码: 404"
+  },
+  {
+    "test": "Word Service 健康检查",
+    "passed": false,
+    "details": "状态码: 500"
+  },
+  {
+    "test": "Vision Service 健康检查",
+    "passed": false,
+    "details": "状态码: 404"
+  },
+  {
+    "test": "Practice Service 健康检查",
+    "passed": false,
+    "details": "状态码: 404"
+  },
+  {
+    "test": "TTS Service 健康检查",
+    "passed": false,
+    "details": "状态码: 404"
+  },
+  {
+    "test": "缓存功能",
+    "passed": false,
+    "details": "HTTP 状态码: 404"
+  },
+  {
+    "test": "标签列表查询",
+    "passed": false,
+    "details": "HTTP 状态码: 404"
+  },
+  {
+    "test": "请求限流",
+    "passed": false,
+    "details": "发送了 25 次请求但未触发限流（可能限流未配置或限制太宽松）"
+  }
+]

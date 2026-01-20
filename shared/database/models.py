@@ -62,8 +62,8 @@ class Word(Base):
     word_id = Column(Integer, primary_key=True, autoincrement=True)
     english_word = Column(String(100), unique=True, nullable=False, index=True)
     chinese_meaning = Column(Text)
-    # phonetic_us = Column(String(50))  # 暂时注释，待数据库更新后启用
-    # phonetic_uk = Column(String(50))  # 暂时注释，待数据库更新后启用
+    phonetic_us = Column(String(50))
+    phonetic_uk = Column(String(50))
     audio_url = Column(String(512))
     example_sentence = Column(Text)
     example_translation = Column(Text)
