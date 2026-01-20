@@ -188,7 +188,11 @@ async def test_database_queries():
 
             if response.status_code == 200:
                 data = response.json()
-                tags = data.get("data", [])
+                # Word Service 直接返回列表，不是包装格式
+                if isinstance(data, list):
+                    tags = data
+                else:
+                    tags = data.get("data", [])
                 log_result(
                     "标签列表查询",
                     True,
