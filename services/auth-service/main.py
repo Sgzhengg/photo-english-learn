@@ -374,6 +374,134 @@ async def logout():
     })
 
 
+# 用户相关端点
+@app.get("/user/me", response_model=UserResponse, tags=["User"])
+async def get_user_me(
+    current_user: Annotated[User, Depends(get_current_user)]
+):
+    """
+    获取当前用户信息
+
+    需要在 Header 中提供 Authorization: Bearer <token>
+    """
+    return UserResponse.model_validate(current_user)
+
+
+@app.patch("/user/preferences", tags=["User"])
+async def update_user_preferences(
+    request_data: dict,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    更新用户偏好设置（注册后引导）
+
+    - **englishLevel**: 英语水平
+    - **dailyGoal**: 每日目标
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    english_level = request_data.get("englishLevel")
+    daily_goal = request_data.get("dailyGoal")
+
+    # TODO: 实际应用中应该保存到用户配置表
+    logger.info(f"更新用户偏好: {current_user.username}, englishLevel={english_level}, dailyGoal={daily_goal}")
+
+    return success_response(data={
+        "message": "偏好设置已更新",
+        "englishLevel": english_level,
+        "dailyGoal": daily_goal
+    })
+
+
+@app.patch("/user/profile", tags=["User"])
+async def update_user_profile(
+    request_data: dict,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    更新用户资料
+
+    - **nickname**: 昵称
+    - **avatar**: 头像 URL
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    nickname = request_data.get("nickname")
+    avatar = request_data.get("avatar")
+
+    if nickname:
+        current_user.nickname = nickname
+    if avatar:
+        current_user.avatar_url = avatar
+
+    await db.commit()
+    await db.refresh(current_user)
+
+    logger.info(f"更新用户资料: {current_user.username}")
+
+    return success_response(data={
+        "message": "资料更新成功",
+        "user": UserResponse.model_validate(current_user).model_dump()
+    })
+
+
+@app.post("/user/change-password", tags=["User"])
+async def change_password(
+    request_data: dict,
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    修改密码
+
+    - **currentPassword**: 当前密码
+    - **newPassword**: 新密码
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    current_password = request_data.get("currentPassword")
+    new_password = request_data.get("newPassword")
+
+    if not all([current_password, new_password]):
+        return success_response(
+            code=-1,
+            message="请提供当前密码和新密码",
+            data=None
+        )
+
+    # 验证当前密码
+    if not verify_password(current_password, current_user.password_hash):
+        return success_response(
+            code=-1,
+            message="当前密码错误",
+            data=None
+        )
+
+    # 验证新密码长度
+    password_bytes = len(new_password.encode('utf-8'))
+    if password_bytes > 72:
+        return success_response(
+            code=-1,
+            message=f"密码长度不能超过72字节（当前：{password_bytes}字节）",
+            data=None
+        )
+
+    # 更新密码
+    current_user.password_hash = hash_password(new_password)
+    await db.commit()
+
+    logger.info(f"用户修改密码: {current_user.username}")
+
+    return success_response(data={
+        "message": "密码修改成功"
+    })
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)

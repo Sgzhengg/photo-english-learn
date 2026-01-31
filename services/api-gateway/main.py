@@ -55,7 +55,7 @@ SERVICE_URLS = {
 
 # 路由前缀映射
 ROUTE_PREFIXES = {
-    "auth": ["/auth", "/register", "/login", "/refresh", "/me"],
+    "auth": ["/auth", "/register", "/login", "/refresh", "/me", "/user"],
     "vision": ["/vision", "/analyze", "/scenes", "/objects"],
     "word": ["/word", "/words", "/tags"],
     "practice": ["/practice", "/generate", "/sentences", "/review", "/progress"],
