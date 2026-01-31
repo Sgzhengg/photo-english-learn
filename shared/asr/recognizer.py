@@ -16,6 +16,7 @@ class SpeechRecognizer:
 
     def __init__(self):
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
+        self.groq_api_key = os.getenv("GROQ_API_KEY")
         self.azure_speech_key = os.getenv("AZURE_SPEECH_KEY")
         self.azure_speech_region = os.getenv("AZURE_SPEECH_REGION", "eastasia")
         self.baidu_api_key = os.getenv("BAIDU_API_KEY")
@@ -24,6 +25,15 @@ class SpeechRecognizer:
     async def get_available_engines(self) -> list:
         """获取可用的识别引擎"""
         engines = []
+
+        # Groq Whisper (推荐 - 速度快，有免费额度)
+        if self.groq_api_key:
+            engines.append({
+                "id": "groq-whisper",
+                "name": "Groq Whisper",
+                "description": "超高速语音识别，有免费额度",
+                "available": True
+            })
 
         # OpenAI Whisper
         if self.openai_api_key:
@@ -52,12 +62,12 @@ class SpeechRecognizer:
                 "available": True
             })
 
-        # 如果没有配置任何 API，添加默认的 OpenAI 引擎
+        # 如果没有配置任何 API，添加默认的 Groq 引擎
         if not engines:
             engines.append({
-                "id": "openai-whisper",
-                "name": "OpenAI Whisper (需要配置 API Key)",
-                "description": "高精度语音识别，支持多语言",
+                "id": "groq-whisper",
+                "name": "Groq Whisper (推荐)",
+                "description": "超高速语音识别，在 https://groq.com 获取免费 API Key",
                 "available": False
             })
 
@@ -67,7 +77,7 @@ class SpeechRecognizer:
         self,
         audio_data: bytes,
         language: str = "en-US",
-        engine: str = "openai-whisper"
+        engine: str = "groq-whisper"
     ) -> Dict[str, Any]:
         """
         识别音频
@@ -80,7 +90,9 @@ class SpeechRecognizer:
         Returns:
             识别结果 {"text": "...", "confidence": 0.95, "duration": 3.5}
         """
-        if engine == "openai-whisper":
+        if engine == "groq-whisper":
+            return await self._recognize_with_groq(audio_data, language)
+        elif engine == "openai-whisper":
             return await self._recognize_with_whisper(audio_data, language)
         elif engine == "azure":
             return await self._recognize_with_azure(audio_data, language)
@@ -93,7 +105,7 @@ class SpeechRecognizer:
         self,
         audio_url: str,
         language: str = "en-US",
-        engine: str = "openai-whisper"
+        engine: str = "groq-whisper"
     ) -> Dict[str, Any]:
         """
         从 URL 识别音频
@@ -174,6 +186,72 @@ class SpeechRecognizer:
 
         except Exception as e:
             logger.error(f"OpenAI Whisper API error: {e}")
+            raise
+
+    async def _recognize_with_groq(
+        self,
+        audio_data: bytes,
+        language: str
+    ) -> Dict[str, Any]:
+        """使用 Groq Whisper API 识别 (超高速，有免费额度)"""
+        if not self.groq_api_key:
+            # 返回模拟数据用于测试
+            logger.warning("Groq API key not configured, returning mock data")
+            return {
+                "text": "I'm working on my laptop while enjoying a fresh cup of coffee.",
+                "confidence": 0.95,
+                "engine": "groq-whisper",
+                "language": language
+            }
+
+        try:
+            # 保存音频到临时文件
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
+                tmp_file.write(audio_data)
+                tmp_file_path = tmp_file.name
+
+            try:
+                # 调用 Groq Whisper API (兼容 OpenAI 格式)
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    files = {
+                        "file": (os.path.basename(tmp_file_path), audio_data, "audio/mpeg")
+                    }
+                    data = {
+                        "model": "whisper-large-v3",
+                        "language": language.split("-")[0],  # en-US -> en
+                        "response_format": "verbose_json"
+                    }
+
+                    response = await client.post(
+                        "https://api.groq.com/openai/v1/audio/transcriptions",
+                        headers={
+                            "Authorization": f"Bearer {self.groq_api_key}"
+                        },
+                        files=files,
+                        data=data,
+                        timeout=60.0
+                    )
+                    response.raise_for_status()
+
+                    result = response.json()
+
+                    return {
+                        "text": result.get("text", ""),
+                        "confidence": 0.95,  # Whisper 不直接返回置信度
+                        "duration": result.get("duration", 0),
+                        "engine": "groq-whisper",
+                        "language": language
+                    }
+
+            finally:
+                # 清理临时文件
+                try:
+                    os.unlink(tmp_file_path)
+                except:
+                    pass
+
+        except Exception as e:
+            logger.error(f"Groq Whisper API error: {e}")
             raise
 
     async def _recognize_with_azure(

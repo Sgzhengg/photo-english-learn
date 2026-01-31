@@ -64,21 +64,22 @@ async def root():
 async def recognize_audio(
     audio_file: UploadFile = File(...),
     language: str = "en-US",
-    engine: str = "openai-whisper",  # openai-whisper, azure, baidu
+    engine: str = "groq-whisper",  # groq-whisper, openai-whisper, azure, baidu
     current_user: Annotated[Optional[User], Depends(get_current_user_optional)] = None
 ):
     """
     语音识别 - 将音频转换为文本
 
     支持的引擎：
-    - openai-whisper: OpenAI Whisper API（推荐，准确度高）
+    - groq-whisper: Groq Whisper API（推荐，超高速，有免费额度）
+    - openai-whisper: OpenAI Whisper API（准确度高，需要付费）
     - azure: Azure Speech Service
     - baidu: 百度语音识别（需要配置 API key）
 
     参数：
     - audio_file: 音频文件（支持 mp3, wav, m4a, ogg 等格式）
     - language: 语言代码（默认 en-US）
-    - engine: 识别引擎（默认 openai-whisper）
+    - engine: 识别引擎（默认 groq-whisper）
     """
     try:
         # 验证文件类型
@@ -114,7 +115,7 @@ async def recognize_audio(
 async def recognize_audio_url(
     audio_url: str = Form(...),
     language: str = Form("en-US"),
-    engine: str = Form("openai-whisper"),
+    engine: str = Form("groq-whisper"),
     current_user: Annotated[Optional[User], Depends(get_current_user_optional)] = None
 ):
     """
@@ -167,7 +168,7 @@ async def evaluate_pronunciation(
         recognition_result = await recognizer.recognize(
             audio_data=audio_data,
             language=language,
-            engine="openai-whisper"
+            engine="groq-whisper"
         )
 
         recorded_text = recognition_result.get("text", "")
@@ -212,8 +213,8 @@ async def get_config(
     """
     return success_response(data={
         "supported_languages": ["en-US", "en-GB", "zh-CN"],
-        "supported_engines": ["openai-whisper", "azure", "baidu"],
-        "default_engine": "openai-whisper",
+        "supported_engines": ["groq-whisper", "openai-whisper", "azure", "baidu"],
+        "default_engine": "groq-whisper",
         "default_language": "en-US",
         "max_audio_size": 25 * 1024 * 1024,  # 25MB
         "supported_formats": ["mp3", "wav", "m4a", "ogg", "flac"]
