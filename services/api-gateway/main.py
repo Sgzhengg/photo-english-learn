@@ -56,7 +56,7 @@ SERVICE_URLS = {
 # 路由前缀映射
 ROUTE_PREFIXES = {
     "auth": ["/auth", "/register", "/login", "/refresh", "/me", "/user"],
-    "vision": ["/vision", "/analyze", "/scenes", "/objects"],
+    "vision": ["/photo", "/vision", "/analyze", "/scenes", "/objects"],  # 添加 /photo
     "word": ["/word", "/words", "/tags"],
     "practice": ["/practice", "/generate", "/sentences", "/review", "/progress"],
     "tts": ["/tts", "/synthesize", "/voices"],
@@ -64,7 +64,7 @@ ROUTE_PREFIXES = {
 }
 
 # 不移除前缀的路由（保留完整路径）
-PRESERVE_PREFIX_ROUTES = ["/user"]
+PRESERVE_PREFIX_ROUTES = ["/user", "/photo"]  # 添加 /photo
 
 
 def determine_service(path: str) -> Tuple[str, str]:
