@@ -13,7 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
 import os
-from typing import Dict
+from typing import Dict, Tuple
 import logging
 
 # 配置日志
@@ -64,7 +64,7 @@ ROUTE_PREFIXES = {
 }
 
 
-def determine_service(path: str) -> tuple[str, str]:
+def determine_service(path: str) -> Tuple[str, str]:
     """根据路径确定目标服务，返回 (服务名, 去掉前缀后的路径)"""
     path = path.lower()
     original_path = path
