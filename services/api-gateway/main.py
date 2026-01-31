@@ -64,18 +64,23 @@ ROUTE_PREFIXES = {
 }
 
 
-def determine_service(path: str) -> str:
-    """根据路径确定目标服务"""
+def determine_service(path: str) -> tuple[str, str]:
+    """根据路径确定目标服务，返回 (服务名, 去掉前缀后的路径)"""
     path = path.lower()
+    original_path = path
 
     # 精确匹配
     for service, prefixes in ROUTE_PREFIXES.items():
         for prefix in prefixes:
-            if path == prefix or path.startswith(prefix + "/"):
-                return service
+            if path == prefix:
+                # 精确匹配前缀，返回根路径
+                return service, "/"
+            elif path.startswith(prefix + "/"):
+                # 路径以该前缀开头，去掉前缀
+                return service, path[len(prefix):]
 
-    # 默认返回 auth
-    return "auth"
+    # 默认返回 auth，保持原路径
+    return "auth", "/" + original_path
 
 
 @app.get("/")
@@ -130,18 +135,19 @@ async def proxy_request(path: str, request: Request):
     - /word, /words, /tags -> word service
     - /generate, /sentences, /review, /progress -> practice service
     - /synthesize, /voices -> tts service
+    - /asr/* -> asr service
     """
-    # 确定目标服务
-    service_name = determine_service("/" + path)
+    # 确定目标服务和转发路径
+    service_name, proxy_path = determine_service("/" + path)
     service_url = SERVICE_URLS.get(service_name)
 
     if not service_url:
         raise HTTPException(status_code=503, detail=f"Service {service_name} not configured")
 
-    # 构建目标URL
-    target_url = f"{service_url}/{path}"
+    # 构建目标URL（使用去掉前缀后的路径）
+    target_url = f"{service_url}{proxy_path}"
 
-    logger.info(f"Proxying {request.method} {path} -> {service_name} service")
+    logger.info(f"Proxying {request.method} /{path} -> {service_name} service ({proxy_path})")
 
     try:
         async with httpx.AsyncClient(timeout=30.0) as client:
