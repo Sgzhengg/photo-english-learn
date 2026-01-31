@@ -1,0 +1,24 @@
+{
+  "name": "photo-english-learn",
+  "version": "1.0.0",
+  "description": "一个基于 AI 的英语学习后端服务，通过拍照识别物体来学习英语词汇。",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Sgzhengg/photo-english-learn.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/Sgzhengg/photo-english-learn/issues"
+  },
+  "homepage": "https://github.com/Sgzhengg/photo-english-learn#readme",
+  "devDependencies": {
+    "@executeautomation/playwright-mcp-server": "^1.0.12"
+  }
+}

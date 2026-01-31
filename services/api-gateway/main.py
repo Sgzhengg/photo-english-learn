@@ -50,6 +50,7 @@ SERVICE_URLS = {
     "word": os.getenv("WORD_SERVICE_URL", "https://word-service.zeabur.app"),
     "practice": os.getenv("PRACTICE_SERVICE_URL", "https://practice-service.zeabur.app"),
     "tts": os.getenv("TTS_SERVICE_URL", "https://tts-service.zeabur.app"),
+    "asr": os.getenv("ASR_SERVICE_URL", "https://asr-service.zeabur.app"),
 }
 
 # 路由前缀映射
@@ -59,6 +60,7 @@ ROUTE_PREFIXES = {
     "word": ["/word", "/words", "/tags"],
     "practice": ["/practice", "/generate", "/sentences", "/review", "/progress"],
     "tts": ["/tts", "/synthesize", "/voices"],
+    "asr": ["/asr", "/recognize", "/speech"],
 }
 
 
