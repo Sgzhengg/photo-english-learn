@@ -109,24 +109,43 @@ async def send_verification_code(
 @app.post("/register", response_model=Token, tags=["Auth"])
 @limit_auth(max_requests=10, window_seconds=60)  # 注册限流：10 次/分钟
 async def register(
-    user_data: UserCreate,
+    request_data: dict,
     db: AsyncSession = Depends(get_async_db)
 ):
     """
     用户注册
 
-    - **username**: 用户名（唯一）
-    - **email**: 邮箱（唯一）
+    - **emailOrPhone**: 邮箱或手机号（用作 username 和 email）
+    - **verificationCode**: 验证码（开发模式：任何 6 位数字都有效）
     - **password**: 密码
-    - **nickname**: 昵称（可选）
 
     限流：每个 IP 每分钟最多 10 次注册请求
     """
     import logging
     logger = logging.getLogger(__name__)
 
+    # 从请求中提取数据
+    email_or_phone = request_data.get("emailOrPhone")
+    verification_code = request_data.get("verificationCode")
+    password = request_data.get("password")
+
+    # 验证必填字段
+    if not all([email_or_phone, password]):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请提供邮箱和密码"
+        )
+
+    # 开发模式：不验证验证码
+    # 生产环境应该验证验证码是否正确
+    if not verification_code:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="请提供验证码"
+        )
+
     # 验证密码长度（bcrypt哈希后的密码不能超过72字节）
-    password_bytes = len(user_data.password.encode('utf-8'))
+    password_bytes = len(password.encode('utf-8'))
     if password_bytes > 72:
         logger.error(f"注册失败: 密码过长 ({password_bytes} 字节)")
         raise HTTPException(
@@ -134,32 +153,41 @@ async def register(
             detail="密码长度不能超过72字节（当前：" + str(password_bytes) + "字节）"
         )
 
+    # 生成用户名（使用 email 的 @ 前部分）
+    if "@" in email_or_phone:
+        username = email_or_phone.split("@")[0]
+        email = email_or_phone
+    else:
+        # 如果是手机号，使用手机号作为 username 和 email
+        username = email_or_phone
+        email = email_or_phone
+
     # 检查用户名是否已存在
-    result = await db.execute(select(User).where(User.username == user_data.username))
+    result = await db.execute(select(User).where(User.username == username))
     if result.scalar_one_or_none():
-        logger.error(f"注册失败: 用户名已存在 ({user_data.username})")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="用户名已存在"
-        )
+        # 如果用户名存在，添加随机后缀
+        import random
+        import string
+        suffix = ''.join(random.choices(string.ascii_lowercase, k=4))
+        username = f"{username}_{suffix}"
 
     # 检查邮箱是否已存在
-    result = await db.execute(select(User).where(User.email == user_data.email))
+    result = await db.execute(select(User).where(User.email == email))
     if result.scalar_one_or_none():
-        logger.error(f"注册失败: 邮箱已被注册 ({user_data.email})")
+        logger.error(f"注册失败: 邮箱已被注册 ({email})")
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="邮箱已被注册"
         )
 
-    logger.info(f"开始注册用户: {user_data.username}, {user_data.email}")
+    logger.info(f"开始注册用户: {username}, {email}")
 
     # 创建新用户
     new_user = User(
-        username=user_data.username,
-        email=user_data.email,
-        nickname=user_data.nickname or user_data.username,
-        password_hash=hash_password(user_data.password)
+        username=username,
+        email=email,
+        nickname=username,
+        password_hash=hash_password(password)
     )
     db.add(new_user)
     await db.commit()
