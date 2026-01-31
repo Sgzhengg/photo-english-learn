@@ -59,6 +59,87 @@ async def root():
     return success_response(data={"message": "Vision Service is running", "service": "vision"})
 
 
+@app.post("/photo/recognize", tags=["Vision"])
+@limit_expensive(max_requests=10, window_seconds=60)
+async def recognize_photo(
+    file: UploadFile = File(...),
+    current_user: Annotated[Optional[User], Depends(get_current_user_optional)] = None,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    拍照识别单词（前端专用接口）
+
+    - **file**: 上传的图片文件
+
+    返回：
+    - 识别出的单词列表
+    - 场景描述（英文）
+    - 场景翻译（中文）
+
+    限流：每个用户/IP 每分钟最多 10 次
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        # 读取图片数据
+        image_data = await file.read()
+        logger.info(f"收到图片识别请求，大小: {len(image_data)} 字节")
+
+        # 使用目标检测模型检测物体
+        logger.info("开始检测物体...")
+        detections = detector.detect_objects(image_data)
+        logger.info(f"检测到 {len(detections)} 个物体")
+
+        # 生成场景描述
+        description = scene_understanding.generate_description(image_data, detections)
+        logger.info(f"场景描述: {description}")
+
+        # 简单的场景翻译（这里可以集成翻译 API）
+        # TODO: 集成真正的翻译服务
+        translation = f"场景描述：{description}"
+
+        # 将检测结果转换为前端期望的单词格式
+        words = []
+        for idx, det in enumerate(detections):
+            words.append({
+                "id": f"word-{idx}",
+                "word": det.get('english_word', det['name']),
+                "phonetic": f"/{det['name']}/",  # 简化的音标
+                "definition": det['name'],  # 中文名称作为释义
+                "pronunciationUrl": "",  # TODO: 使用 TTS 服务生成发音
+                "isSaved": False,
+                "positionInSentence": idx
+            })
+
+        # 获取用户 ID（如果已登录）
+        user_id = "anonymous"
+        if current_user:
+            user_id = str(current_user.user_id)
+
+        return success_response(data={
+            "photo": {
+                "id": f"photo-{datetime.now().timestamp()}",
+                "userId": user_id,
+                "imageUrl": f"data:{file.content_type};base64,{base64.b64encode(image_data).decode('utf-8')}",
+                "thumbnailUrl": f"data:{file.content_type};base64,{base64.b64encode(image_data).decode('utf-8')}",
+                "capturedAt": datetime.now().isoformat(),
+                "location": "识别成功",
+                "status": "completed"
+            },
+            "words": words,
+            "sceneDescription": description,
+            "sceneTranslation": translation
+        })
+
+    except Exception as e:
+        logger.error(f"图片识别失败: {str(e)}", exc_info=True)
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"图片识别失败: {str(e)}"
+        )
+
+
 @app.post("/analyze", response_model=SceneResponse, tags=["Vision"])
 @limit_expensive(max_requests=10, window_seconds=60)  # 图片分析限流：10 次/分钟
 async def analyze_scene(
