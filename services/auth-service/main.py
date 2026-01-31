@@ -106,7 +106,7 @@ async def send_verification_code(
     })
 
 
-@app.post("/register", response_model=Token, tags=["Auth"])
+@app.post("/register", tags=["Auth"])
 @limit_auth(max_requests=10, window_seconds=60)  # 注册限流：10 次/分钟
 async def register(
     request_data: dict,
@@ -131,26 +131,29 @@ async def register(
 
     # 验证必填字段
     if not all([email_or_phone, password]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请提供邮箱和密码"
+        return success_response(
+            code=-1,
+            message="请提供邮箱和密码",
+            data=None
         )
 
     # 开发模式：不验证验证码
     # 生产环境应该验证验证码是否正确
     if not verification_code:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请提供验证码"
+        return success_response(
+            code=-1,
+            message="请提供验证码",
+            data=None
         )
 
     # 验证密码长度（bcrypt哈希后的密码不能超过72字节）
     password_bytes = len(password.encode('utf-8'))
     if password_bytes > 72:
         logger.error(f"注册失败: 密码过长 ({password_bytes} 字节)")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="密码长度不能超过72字节（当前：" + str(password_bytes) + "字节）"
+        return success_response(
+            code=-1,
+            message=f"密码长度不能超过72字节（当前：{password_bytes}字节）",
+            data=None
         )
 
     # 生成用户名（使用 email 的 @ 前部分）
@@ -175,9 +178,10 @@ async def register(
     result = await db.execute(select(User).where(User.email == email))
     if result.scalar_one_or_none():
         logger.error(f"注册失败: 邮箱已被注册 ({email})")
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="邮箱已被注册"
+        return success_response(
+            code=-1,
+            message="邮箱已被注册",
+            data=None
         )
 
     logger.info(f"开始注册用户: {username}, {email}")
@@ -201,10 +205,11 @@ async def register(
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
-    return Token(
-        access_token=access_token,
-        user=UserResponse.model_validate(new_user)
-    )
+    return success_response(data={
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(new_user).model_dump()
+    })
 
 
 @app.post("/login", response_model=Token, tags=["Auth"])
