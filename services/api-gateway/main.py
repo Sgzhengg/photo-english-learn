@@ -81,8 +81,8 @@ def determine_service(path: str) -> Tuple[str, str]:
             elif path.startswith(prefix + "/"):
                 # 检查是否需要保留完整路径
                 if prefix in PRESERVE_PREFIX_ROUTES:
-                    # 对于 /user 等前缀，保留完整路径
-                    return service, "/" + original_path
+                    # 对于 /user 等前缀，保留完整路径（path 已经以 / 开头）
+                    return service, path
                 else:
                     # 路径以该前缀开头，去掉前缀
                     return service, path[len(prefix):]
