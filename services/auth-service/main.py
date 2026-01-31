@@ -212,7 +212,7 @@ async def register(
     })
 
 
-@app.post("/login", response_model=Token, tags=["Auth"])
+@app.post("/login", tags=["Auth"])
 @limit_auth(max_requests=20, window_seconds=60)  # 登录限流：20 次/分钟
 async def login(
     user_data: UserLogin,
@@ -234,10 +234,10 @@ async def login(
 
     # 验证用户和密码
     if not user or not verify_password(user_data.password, user.password_hash):
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户名或密码错误",
-            headers={"WWW-Authenticate": "Bearer"},
+        return success_response(
+            code=-1,
+            message="用户名或密码错误",
+            data=None
         )
 
     # 生成 JWT Token
@@ -248,13 +248,14 @@ async def login(
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
-    return Token(
-        access_token=access_token,
-        user=UserResponse.model_validate(user)
-    )
+    return success_response(data={
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(user).model_dump()
+    })
 
 
-@app.get("/me", response_model=UserResponse, tags=["Auth"])
+@app.get("/me", tags=["Auth"])
 async def get_current_user_info(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
@@ -263,10 +264,10 @@ async def get_current_user_info(
 
     需要在 Header 中提供 Authorization: Bearer <token>
     """
-    return UserResponse.model_validate(current_user)
+    return success_response(data=UserResponse.model_validate(current_user).model_dump())
 
 
-@app.post("/refresh", response_model=Token, tags=["Auth"])
+@app.post("/refresh", tags=["Auth"])
 async def refresh_token(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
@@ -282,10 +283,11 @@ async def refresh_token(
         expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     )
 
-    return Token(
-        access_token=access_token,
-        user=UserResponse.model_validate(current_user)
-    )
+    return success_response(data={
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(current_user).model_dump()
+    })
 
 
 @app.post("/reset-password", tags=["Auth"])
@@ -310,9 +312,10 @@ async def reset_password(
     new_password = request_data.get("newPassword")
 
     if not all([email_or_phone, verification_code, new_password]):
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="请提供邮箱、验证码和新密码"
+        return success_response(
+            code=-1,
+            message="请提供邮箱、验证码和新密码",
+            data=None
         )
 
     # 开发模式：不验证验证码格式（任何 6 位数字都有效）
@@ -328,17 +331,19 @@ async def reset_password(
 
     if not user:
         logger.error(f"重置密码失败: 用户不存在 ({email_or_phone})")
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="用户不存在"
+        return success_response(
+            code=-1,
+            message="用户不存在",
+            data=None
         )
 
     # 验证密码长度
     password_bytes = len(new_password.encode('utf-8'))
     if password_bytes > 72:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="密码长度不能超过72字节"
+        return success_response(
+            code=-1,
+            message="密码长度不能超过72字节",
+            data=None
         )
 
     # 更新密码
@@ -375,7 +380,7 @@ async def logout():
 
 
 # 用户相关端点
-@app.get("/user/me", response_model=UserResponse, tags=["User"])
+@app.get("/user/me", tags=["User"])
 async def get_user_me(
     current_user: Annotated[User, Depends(get_current_user)]
 ):
@@ -384,7 +389,7 @@ async def get_user_me(
 
     需要在 Header 中提供 Authorization: Bearer <token>
     """
-    return UserResponse.model_validate(current_user)
+    return success_response(data=UserResponse.model_validate(current_user).model_dump())
 
 
 @app.patch("/user/preferences", tags=["User"])

@@ -63,21 +63,29 @@ ROUTE_PREFIXES = {
     "asr": ["/asr", "/recognize", "/speech"],
 }
 
+# 不移除前缀的路由（保留完整路径）
+PRESERVE_PREFIX_ROUTES = ["/user"]
+
 
 def determine_service(path: str) -> Tuple[str, str]:
     """根据路径确定目标服务，返回 (服务名, 去掉前缀后的路径)"""
     path = path.lower()
     original_path = path
 
-    # 精确匹配
+    # 精确匹配和前缀匹配
     for service, prefixes in ROUTE_PREFIXES.items():
         for prefix in prefixes:
             if path == prefix:
                 # 精确匹配前缀，返回根路径
                 return service, "/"
             elif path.startswith(prefix + "/"):
-                # 路径以该前缀开头，去掉前缀
-                return service, path[len(prefix):]
+                # 检查是否需要保留完整路径
+                if prefix in PRESERVE_PREFIX_ROUTES:
+                    # 对于 /user 等前缀，保留完整路径
+                    return service, "/" + original_path
+                else:
+                    # 路径以该前缀开头，去掉前缀
+                    return service, path[len(prefix):]
 
     # 默认返回 auth，保持原路径
     return "auth", "/" + original_path
