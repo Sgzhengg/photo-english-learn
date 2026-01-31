@@ -507,6 +507,96 @@ async def change_password(
     })
 
 
+# =============================================================================
+# 临时开发端点 - 仅用于测试，生产环境必须删除！
+# =============================================================================
+
+@app.delete("/dev/clear-user", tags=["Dev"])
+async def clear_user_by_email(
+    request_data: dict,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    [临时开发端点] 根据邮箱删除用户
+
+    ⚠️ 警告：此端点仅用于开发/测试环境，生产环境必须删除！
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    email = request_data.get("email")
+
+    if not email:
+        return success_response(
+            code=-1,
+            message="请提供邮箱地址",
+            data=None
+        )
+
+    # 查找用户
+    from sqlalchemy import select, delete
+    result = await db.execute(
+        select(User).where(User.email == email)
+    )
+    user = result.scalar_one_or_none()
+
+    if not user:
+        return success_response(
+            code=-1,
+            message=f"用户不存在: {email}",
+            data=None
+        )
+
+    # 删除用户
+    await db.execute(
+        delete(User).where(User.email == email)
+    )
+    await db.commit()
+
+    logger.warning(f"[开发端点] 已删除用户: {email} (user_id: {user.user_id})")
+
+    return success_response(data={
+        "message": f"用户已删除: {email}",
+        "user_id": user.user_id,
+        "username": user.username
+    })
+
+
+@app.get("/dev/list-users", tags=["Dev"])
+async def list_all_users(
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    [临时开发端点] 列出所有用户
+
+    ⚠️ 警告：此端点仅用于开发/测试环境，生产环境必须删除！
+    """
+    import logging
+    logger = logging.getLogger(__name__)
+
+    from sqlalchemy import select
+    result = await db.execute(
+        select(User).order_by(User.created_at.desc())
+    )
+    users = result.scalars().all()
+
+    users_list = [
+        {
+            "user_id": u.user_id,
+            "username": u.username,
+            "email": u.email,
+            "nickname": u.nickname,
+            "created_at": u.created_at.isoformat() if u.created_at else None
+        }
+        for u in users
+    ]
+
+    return success_response(data={
+        "total": len(users_list),
+        "users": users_list
+    })
+
+
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(app, host="0.0.0.0", port=8001)
