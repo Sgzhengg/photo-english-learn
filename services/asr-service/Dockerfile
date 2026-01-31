@@ -1,22 +1,35 @@
-# 使用 Python 3.11 镜像
+# ASR Service - Zeabur Dockerfile
 FROM python:3.11-slim
 
-# 设置工作目录
+LABEL "language"="python"
+LABEL "framework"="fastapi"
+
 WORKDIR /app
 
 # 安装系统依赖
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
+    postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# 复制项目文件
-COPY . .
+# 复制 requirements 并安装
+COPY services/asr-service/requirements.txt .
+RUN pip install --no-cache-dir --upgrade pip && \
+    pip install --no-cache-dir psycopg2-binary && \
+    pip install --no-cache-dir -r requirements.txt
 
-# 安装 Python 依赖
-RUN pip install --no-cache-dir -r requirements.txt
+# 复制所有代码（包括 shared）
+COPY shared ./shared/
+COPY services/asr-service/ ./asr-service/
+
+# 设置工作目录到服务目录
+WORKDIR /app/asr-service
+
+# 设置 Python 路径
+ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # 暴露端口
 EXPOSE 8080
 
-# 运行服务
-CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
+# 启动服务
+CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8080"]
