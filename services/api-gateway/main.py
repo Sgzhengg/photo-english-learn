@@ -44,13 +44,14 @@ app.add_middleware(
 )
 
 # 后端服务 URLs (从环境变量获取，使用默认值)
+# 生产环境使用 Zeabur 内网地址以提高性能和稳定性
 SERVICE_URLS = {
-    "auth": os.getenv("AUTH_SERVICE_URL", "https://photo-english-learn-auth-service.zeabur.app"),
-    "vision": os.getenv("VISION_SERVICE_URL", "https://vision-service.zeabur.app"),
-    "word": os.getenv("WORD_SERVICE_URL", "https://word-service.zeabur.app"),
-    "practice": os.getenv("PRACTICE_SERVICE_URL", "https://practice-service.zeabur.app"),
-    "tts": os.getenv("TTS_SERVICE_URL", "https://tts-service.zeabur.app"),
-    "asr": os.getenv("ASR_SERVICE_URL", "https://asr-service.zeabur.app"),
+    "auth": os.getenv("AUTH_SERVICE_URL", "http://auth-service.zeabur.internal:8001"),
+    "vision": os.getenv("VISION_SERVICE_URL", "http://vision-service.zeabur.internal:8003"),
+    "word": os.getenv("WORD_SERVICE_URL", "http://word-service.zeabur.internal:8004"),
+    "practice": os.getenv("PRACTICE_SERVICE_URL", "http://practice-service.zeabur.internal:8005"),
+    "tts": os.getenv("TTS_SERVICE_URL", "http://tts-service.zeabur.internal:8006"),
+    "asr": os.getenv("ASR_SERVICE_URL", "http://asr-service.zeabur.internal:8080"),
 }
 
 # 路由前缀映射
