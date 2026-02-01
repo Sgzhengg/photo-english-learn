@@ -22,12 +22,12 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 RUN pip install --upgrade pip setuptools wheel
 
 # ==================== 关键优化：先复制依赖，再复制代码 ====================
-# 只复制 requirements-full.txt，包含所有必需的依赖（fastapi, uvicorn, openai 等）
-COPY requirements-full.txt ./
+# 使用 requirements-deploy.txt 避免层缓存问题
+COPY requirements-deploy.txt ./
 
-# 安装 Python 依赖（使用 BuildKit 缓存）
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir -r requirements-full.txt && \
+# 安装 Python 依赖（强制重新构建）
+# 构建时间戳：2025-02-02-v2
+RUN pip install --no-cache-dir -r requirements-deploy.txt && \
     echo "✓ Dependencies installed successfully" && \
     python -c "import uvicorn; print(f'✓ uvicorn version: {uvicorn.__version__}')" && \
     python -c "import fastapi; print(f'✓ fastapi version: {fastapi.__version__}')" && \
