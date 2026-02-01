@@ -102,12 +102,11 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
     import time
     logger = logging.getLogger(__name__)
 
-    # 定义模型列表（按优先级排序）- 优化：优先使用快速模型
-    # 使用 OpenRouter 上在中国可访问的视觉模型
+    # 定义模型列表（按优先级排序）- 使用 OpenRouter 上可用的视觉模型
+    # 更新：OpenRouter 现在提供 Qwen 2.5 VL 系列（2025年1月发布）
     MODELS = [
-        "qwen/qwen-2-vl-7b-instruct",        # 优先：Qwen 2 VL 7B（快速、便宜、够用）
-        "qwen/qwen-vl-max-latest",           # 备选：Qwen VL Max（平衡）
-        "qwen/qwen-2-vl-72b-instruct",       # 保底：Qwen 2 VL 72B（高质量）
+        "qwen/qwen-2.5-vl-7b-instruct",      # 优先：Qwen 2.5 VL 7B（快速、免费、够用）
+        "qwen/qwen-2.5-vl-72b-instruct",     # 备选：Qwen 2.5 VL 72B（高质量）
     ]
 
     try:
