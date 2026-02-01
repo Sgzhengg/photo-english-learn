@@ -1,6 +1,7 @@
 """
 认证相关工具函数
 """
+import os
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
@@ -12,6 +13,10 @@ from sqlalchemy import select
 
 from shared.database.models import User
 from shared.database.database import get_async_db
+
+# 开发模式配置：跳过认证
+# 在环境变量中设置 SKIP_AUTH=true 来启用开发模式
+SKIP_AUTH = os.getenv("SKIP_AUTH", "false").lower() == "true"
 
 # 密码加密上下文
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
@@ -70,7 +75,26 @@ async def get_current_user(
     从 JWT Token 中获取当前用户
 
     依赖注入函数，用于需要认证的路由
+
+    DEV MODE: 如果 SKIP_AUTH=true，返回虚拟用户
     """
+    # DEV MODE: 跳过认证，返回虚拟用户
+    if SKIP_AUTH:
+        # 创建一个虚拟用户对象（不需要保存到数据库）
+        dev_user = User(
+            user_id=999999,
+            username="dev_user",
+            email="dev@example.com",
+            phone_number=None,
+            nickname="开发用户",
+            avatar_url=None,
+            english_level="intermediate",
+            daily_goal=20,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
+        )
+        return dev_user
+
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="无法验证认证信息",
@@ -112,7 +136,26 @@ async def get_current_user_optional(
 
     依赖注入函数，用于可选认证的路由
     如果没有提供 Token 或 Token 无效，返回 None
+
+    DEV MODE: 如果 SKIP_AUTH=true，返回虚拟用户
     """
+    # DEV MODE: 跳过认证，返回虚拟用户
+    if SKIP_AUTH:
+        # 创建一个虚拟用户对象（不需要保存到数据库）
+        dev_user = User(
+            user_id=999999,
+            username="dev_user",
+            email="dev@example.com",
+            phone_number=None,
+            nickname="开发用户",
+            avatar_url=None,
+            english_level="intermediate",
+            daily_goal=20,
+            created_at=datetime.now(timezone.utc),
+            updated_at=datetime.now(timezone.utc)
+        )
+        return dev_user
+
     if credentials is None:
         return None
 

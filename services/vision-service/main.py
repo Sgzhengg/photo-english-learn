@@ -92,39 +92,42 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
     限流：每个用户/IP 每分钟最多 30 次
 
     模型优先级（按顺序尝试）：
-    1. qwen/qwen-2-vl-72b-instruct（阿里巴巴 Qwen 2 VL，视觉理解强）
-    2. qwen/qwen-2-vl-7b-instruct（Qwen 2 VL 7B，快速便宜）
-    3. qwen/qwen-vl-max-latest（Qwen VL Max 最新版）
-    4. z-ai/glm-4.6v（智谱AI GLM-4.6V）
+    1. qwen/qwen-2-vl-7b-instruct（优先：Qwen 2 VL 7B，快速、便宜、够用）
+    2. qwen/qwen-vl-max-latest（备选：Qwen VL Max，平衡性能）
+    3. qwen/qwen-2-vl-72b-instruct（保底：Qwen 2 VL 72B，高质量）
 
     注：OpenAI/Anthropic/Google 模型在中国大陆被屏蔽，故使用这些可访问的替代方案
     """
     import logging
+    import time
     logger = logging.getLogger(__name__)
 
-    # 定义模型列表（按优先级排序）
+    # 定义模型列表（按优先级排序）- 优化：优先使用快速模型
     # 使用 OpenRouter 上在中国可访问的视觉模型
-    # 注：OpenAI/Anthropic/Google 模型在中国大陆被屏蔽（403错误）
     MODELS = [
-        "qwen/qwen-2-vl-72b-instruct",       # Qwen 2 VL 72B（阿里巴巴，视觉强）
-        "qwen/qwen-2-vl-7b-instruct",        # Qwen 2 VL 7B（快速，便宜）
-        "qwen/qwen-vl-max-latest",           # Qwen VL Max（最新版本）
-        "z-ai/glm-4.6v",                     # GLM-4.6V（智谱AI，支持视觉）
+        "qwen/qwen-2-vl-7b-instruct",        # 优先：Qwen 2 VL 7B（快速、便宜、够用）
+        "qwen/qwen-vl-max-latest",           # 备选：Qwen VL Max（平衡）
+        "qwen/qwen-2-vl-72b-instruct",       # 保底：Qwen 2 VL 72B（高质量）
     ]
 
     try:
         # 读取图片数据
         image_data = await file.read()
-        logger.info(f"收到图片识别请求，大小: {len(image_data)} 字节")
+        request_start_time = time.time()
+        logger.info(f"📸 收到图片识别请求，大小: {len(image_data)} 字节")
 
         # 转换为 base64
         base64_image = base64.b64encode(image_data).decode('utf-8')
 
         # 尝试多个模型，直到成功
         last_error = None
-        for model in MODELS:
+        successful_model = None
+        model_start_time = time.time()
+
+        for idx, model in enumerate(MODELS):
             try:
-                logger.info(f"尝试使用模型: {model}")
+                logger.info(f"🔄 [{idx+1}/{len(MODELS)}] 尝试使用模型: {model}")
+                call_start_time = time.time()
 
                 response = await client.chat.completions.create(
                     model=model,
@@ -181,13 +184,16 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
                 )
 
                 # 成功获取响应，跳出循环
-                logger.info(f"模型 {model} 调用成功")
+                call_duration = time.time() - call_start_time
+                successful_model = model
+                logger.info(f"✅ 模型 {model} 调用成功，耗时: {call_duration:.2f}秒")
                 break
 
             except Exception as e:
                 # 记录错误，尝试下一个模型
                 last_error = e
-                logger.warning(f"模型 {model} 调用失败: {str(e)}")
+                call_duration = time.time() - call_start_time
+                logger.warning(f"❌ 模型 {model} 调用失败 ({call_duration:.2f}秒): {str(e)[:100]}")
                 continue
 
         # 如果所有模型都失败，抛出最后一个错误
@@ -198,9 +204,12 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
         result_text = response.choices[0].message.content
         result = json.loads(result_text)
 
-        logger.info(f"识别成功: {len(result.get('objects', []))} 个物体")
-        logger.info(f"场景描述: {result.get('scene_description', '')}")
-        logger.info(f"场景翻译: {result.get('scene_translation', '')}")
+        # 计算总耗时
+        total_duration = time.time() - request_start_time
+
+        logger.info(f"✨ 识别成功 | 模型: {successful_model} | 物体: {len(result.get('objects', []))} 个 | 总耗时: {total_duration:.2f}秒")
+        logger.info(f"   场景描述: {result.get('scene_description', '')[:60]}...")
+        logger.info(f"   场景翻译: {result.get('scene_translation', '')[:60]}...")
 
         # 构造返回数据
         words = []
