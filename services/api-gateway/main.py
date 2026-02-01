@@ -57,7 +57,7 @@ SERVICE_URLS = {
 ROUTE_PREFIXES = {
     "auth": ["/auth", "/register", "/login", "/refresh", "/me", "/user"],
     "vision": ["/photo", "/vision", "/analyze", "/scenes", "/objects"],  # 添加 /photo
-    "word": ["/word", "/words", "/tags"],
+    "word": ["/word", "/words", "/tags", "/vocabulary"],  # 添加 /vocabulary
     "practice": ["/practice", "/generate", "/sentences", "/review", "/progress"],
     "tts": ["/tts", "/synthesize", "/voices"],
     "asr": ["/asr", "/recognize", "/speech"],
