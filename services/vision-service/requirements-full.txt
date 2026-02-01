@@ -1,9 +1,9 @@
-# Vision Service - 完整依赖列表（所有依赖合并）
-# 这个文件包含所有必需的依赖，用于简化部署
+# Vision Service - 优化依赖列表
+# 移除不必要的开发依赖，减小镜像大小和启动时间
 
 # 基础框架
 fastapi==0.115.0
-uvicorn[standard]==0.32.0
+uvicorn==0.32.0  # 移除 [standard]，不包含 watchfiles, uvloop
 pydantic==2.9.2
 pydantic-settings==2.6.0
 python-dotenv==1.0.1

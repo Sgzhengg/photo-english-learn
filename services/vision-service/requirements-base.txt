@@ -1,6 +1,6 @@
 # 基础依赖 - 很少变化，优先安装并缓存
 fastapi==0.115.0
-uvicorn[standard]==0.32.0
+uvicorn==0.32.0  # 移除 [standard]，不包含 watchfiles, uvloop
 pydantic==2.9.2
 pydantic-settings==2.6.0
 python-dotenv==1.0.1

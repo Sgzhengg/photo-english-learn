@@ -1,5 +1,5 @@
-# Vision Service - Optimized Dockerfile for Zeabur
-# 确保所有依赖正确安装，避免部署失败
+# Vision Service - Zeabur 优化 Dockerfile
+# 基于 Zeabur AI 诊断建议优化
 
 FROM python:3.11-slim
 
@@ -22,35 +22,24 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 升级 pip
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# ==================== 安装 Python 依赖 ====================
-# 优先使用完整的依赖文件，如果不存在则回退到分层文件
+# ==================== 关键优化：先复制依赖，再复制代码 ====================
+# 这样代码变化时不需要重新安装依赖（利用 Docker 层缓存）
 COPY requirements*.txt ./
 
-# 尝试安装完整依赖文件（如果存在）
-RUN if [ -f requirements-full.txt ]; then \
-      echo "Installing from requirements-full.txt..."; \
-      pip install --no-cache-dir -r requirements-full.txt; \
-    else \
-      echo "Installing from layered requirements..."; \
-      pip install --no-cache-dir -r requirements-base.txt && \
-      pip install --no-cache-dir -r requirements-ml.txt && \
-      pip install --no-cache-dir -r requirements.txt; \
-    fi
+# 安装 Python 依赖（使用 pip 缓存加速）
+RUN --mount=type=cache,target=/root/.cache/pip \
+    pip install --no-cache-dir -r requirements-full.txt
 
-# ==================== 复制代码 ====================
+# ==================== 最后复制代码 ====================
+# 代码变化不会触发依赖重新安装
 COPY . .
 
-# ==================== 预下载 YOLO 模型（可选）====================
-# 创建模型目录
+# ==================== 预下载 YOLO 模型 ====================
 RUN mkdir -p /app/models
+RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', '/app/models/')" 2>/dev/null || echo "Model will download on first use"
 
-# 尝试预下载模型（如果失败也不会影响部署）
-RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', '/app/models/')" 2>/dev/null || echo "Model pre-download skipped, will download on first use"
-
-# 设置 Python 路径（支持 shared 模块）
+# 设置 Python 路径
 ENV PYTHONPATH="/app:$PYTHONPATH"
-
-# 设置模型路径环境变量
 ENV YOLO_MODEL_PATH="/app/models/yolov8n.pt"
 
 # 暴露端口
