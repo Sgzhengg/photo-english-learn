@@ -17,7 +17,7 @@ import os
 import json
 from datetime import datetime
 
-from openai import OpenAI
+from openai import AsyncOpenAI
 import httpx
 
 from shared.database.database import get_async_db
@@ -47,18 +47,18 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 初始化 OpenAI 客户端（使用 OpenRouter）
+# 初始化 AsyncOpenAI 客户端（使用 OpenRouter）
 api_key = os.getenv("OPENROUTER_API_KEY")
 if not api_key:
     raise ValueError("OPENROUTER_API_KEY environment variable is required")
 
-# 创建自定义 HTTP 客户端，设置更长的超时时间
+# 创建自定义异步 HTTP 客户端，设置更长的超时时间
 http_client = httpx.AsyncClient(
-    timeout=httpx.Timeout(60.0, connect=10.0),  # 总超时 60 秒，连接超时 10 秒
+    timeout=httpx.Timeout(90.0, connect=10.0),  # 总超时 90 秒，连接超时 10 秒
     limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
 )
 
-client = OpenAI(
+client = AsyncOpenAI(
     api_key=api_key,
     base_url="https://openrouter.ai/api/v1",
     http_client=http_client,
@@ -105,7 +105,7 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
         # 使用 GPT-4o-mini 一次调用完成所有功能
         logger.info("调用 OpenRouter GPT-4o-mini API...")
 
-        response = client.chat.completions.create(
+        response = await client.chat.completions.create(
             model="openai/gpt-4o-mini",
             messages=[{
                 "role": "user",
