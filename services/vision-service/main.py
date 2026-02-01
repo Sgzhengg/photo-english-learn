@@ -18,6 +18,7 @@ import json
 from datetime import datetime
 
 from openai import OpenAI
+import httpx
 
 from shared.database.database import get_async_db
 from shared.utils.response import success_response
@@ -51,9 +52,16 @@ api_key = os.getenv("OPENROUTER_API_KEY")
 if not api_key:
     raise ValueError("OPENROUTER_API_KEY environment variable is required")
 
+# 创建自定义 HTTP 客户端，设置更长的超时时间
+http_client = httpx.AsyncClient(
+    timeout=httpx.Timeout(60.0, connect=10.0),  # 总超时 60 秒，连接超时 10 秒
+    limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+)
+
 client = OpenAI(
     api_key=api_key,
     base_url="https://openrouter.ai/api/v1",
+    http_client=http_client,
 )
 
 
