@@ -100,10 +100,12 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
     logger = logging.getLogger(__name__)
 
     # 定义模型列表（按优先级排序）
+    # 使用 OpenRouter 上实际可用的视觉模型
     MODELS = [
-        "google/gemini-2.0-flash-exp:free",  # Google Gemini 2.0 Flash（免费）
-        "openai/gpt-4o",                      # GPT-4o 完整版
-        "meta-llama/llama-3.2-90b-vision-instruct",  # Llama 3.2 90B Vision
+        "google/gemini-2.0-flash-exp:free",  # Google Gemini 2.0 Flash（免费，首选）
+        "google/gemini-flash-1.5",            # Google Gemini Flash 1.5（稳定）
+        "anthropic/claude-3-haiku",           # Claude 3 Haiku（快速，便宜）
+        "openai/gpt-4o",                      # GPT-4o 完整版（付费，功能强）
     ]
 
     try:
