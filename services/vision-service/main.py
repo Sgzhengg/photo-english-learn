@@ -1,6 +1,6 @@
 """
-视觉服务 - 使用 OpenRouter GPT-4o-mini
-无需本地模型，直接调用云端 API
+视觉服务 - 使用 OpenRouter Qwen 2.5 VL
+无需本地模型，直接调用云端 API（在中国可访问）
 """
 import sys
 from pathlib import Path
@@ -26,8 +26,8 @@ from shared.utils.rate_limit import limit_expensive
 
 # 初始化 FastAPI 应用
 app = FastAPI(
-    title="Vision Service (OpenRouter GPT-4o-mini)",
-    description="视觉服务 - 直接调用 OpenRouter GPT-4o-mini",
+    title="Vision Service (OpenRouter Qwen 2.5 VL)",
+    description="视觉服务 - 直接调用 OpenRouter Qwen 2.5 VL（在中国可访问）",
     version="2.0.0"
 )
 
@@ -69,10 +69,10 @@ client = AsyncOpenAI(
 async def root():
     """健康检查"""
     return success_response(data={
-        "message": "Vision Service is running (OpenRouter GPT-4o-mini)",
+        "message": "Vision Service is running (OpenRouter Qwen 2.5 VL)",
         "service": "vision",
         "provider": "OpenRouter",
-        "model": "openai/gpt-4o-mini"
+        "model": "qwen/qwen-2.5-vl-7b-instruct"
     })
 
 

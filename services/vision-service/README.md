@@ -1,8 +1,8 @@
-# Vision Service - OpenRouter GPT-4o-mini 版本
+# Vision Service - OpenRouter Qwen 2.5 VL 版本
 
 ## 🎯 架构说明
 
-本服务使用 **OpenRouter GPT-4o-mini** API 实现图像识别，无需本地 ML 模型。
+本服务使用 **OpenRouter Qwen 2.5 VL** API 实现图像识别，无需本地 ML 模型（在中国可访问）。
 
 ### 优势
 
@@ -48,7 +48,7 @@
 
 ## 💰 成本估算
 
-使用 OpenRouter GPT-4o-mini 的成本：
+使用 OpenRouter Qwen 2.5 VL 的成本：
 
 | 图片量/月 | 成本 |
 |----------|------|
@@ -104,10 +104,10 @@
 ```bash
 cd E:\photo-english-learn
 git add services/vision-service/
-git commit -m "refactor: migrate vision-service to OpenRouter GPT-4o-mini
+git commit -m "refactor: migrate vision-service to OpenRouter Qwen 2.5 VL
 
 - Remove local ML dependencies (PyTorch, OpenCV, ultralytics)
-- Use OpenRouter GPT-4o-mini for image recognition
+- Use OpenRouter Qwen 2.5 VL for image recognition (accessible in China)
 - Single API call: object detection + scene understanding + translation
 - Reduce image size from 1.5GB to ~150MB (90% reduction)
 - Reduce startup time from 60s to ~5s (92% reduction)
@@ -142,14 +142,14 @@ INFO: Uvicorn running on http://0.0.0.0:8003
 
 ## 📊 性能对比
 
-| 指标 | 本地 YOLOv8 | OpenRouter GPT-4o-mini |
+| 指标 | 本地 YOLOv8 | OpenRouter Qwen 2.5 VL |
 |------|------------|----------------------|
 | 镜像大小 | 1.5GB | ~150MB ↓ 90% |
 | 启动时间 | 60秒 | ~5秒 ↓ 92% |
 | 部署时间 | 8分钟 | ~2分钟 ↓ 75% |
 | 内存占用 | ~1GB | ~100MB ↓ 90% |
 | 识别速度 | ~300ms | ~500ms-2s |
-| 月成本（1000张） | $20-50 | $5.15 ↓ 70% |
+| 月成本（1000张） | $20-50 | $0.15 ↓ 99% |
 
 ## 🐛 故障排查
 
@@ -176,5 +176,5 @@ INFO: Uvicorn running on http://0.0.0.0:8003
 ## 📚 相关文档
 
 - [OpenRouter 文档](https://openrouter.ai/docs)
-- [GPT-4o-mini API 文档](https://platform.openai.com/docs/models/gpt-4o-mini)
+- [Qwen 2.5 VL 模型页面](https://openrouter.ai/qwen/qwen-2.5-vl-7b-instruct)
 - [Zeabur 文档](https://zeabur.com/docs)
