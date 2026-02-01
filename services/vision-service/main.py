@@ -80,7 +80,7 @@ async def root():
 @limit_expensive(max_requests=30, window_seconds=60)
 async def recognize_photo(file: UploadFile = UploadFile(...)):
     """
-    拍照识别单词（使用 OpenRouter GPT-4o-mini）
+    拍照识别单词（使用 OpenRouter 多模型支持）
 
     - **file**: 上传的图片文件
 
@@ -90,9 +90,21 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
     - 场景翻译（中文翻译）
 
     限流：每个用户/IP 每分钟最多 30 次
+
+    模型优先级（按顺序尝试）：
+    1. google/gemini-2.0-flash-exp:free（免费，快速）
+    2. openai/gpt-4o（付费，功能强）
+    3. meta-llama/llama-3.2-90b-vision-instruct（开源）
     """
     import logging
     logger = logging.getLogger(__name__)
+
+    # 定义模型列表（按优先级排序）
+    MODELS = [
+        "google/gemini-2.0-flash-exp:free",  # Google Gemini 2.0 Flash（免费）
+        "openai/gpt-4o",                      # GPT-4o 完整版
+        "meta-llama/llama-3.2-90b-vision-instruct",  # Llama 3.2 90B Vision
+    ]
 
     try:
         # 读取图片数据
@@ -102,17 +114,20 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
         # 转换为 base64
         base64_image = base64.b64encode(image_data).decode('utf-8')
 
-        # 使用 GPT-4o-mini 一次调用完成所有功能
-        logger.info("调用 OpenRouter GPT-4o-mini API...")
+        # 尝试多个模型，直到成功
+        last_error = None
+        for model in MODELS:
+            try:
+                logger.info(f"尝试使用模型: {model}")
 
-        response = await client.chat.completions.create(
-            model="openai/gpt-4o-mini",
-            messages=[{
-                "role": "user",
-                "content": [
-                    {
-                        "type": "text",
-                        "text": """
+                response = await client.chat.completions.create(
+                    model=model,
+                    messages=[{
+                        "role": "user",
+                        "content": [
+                            {
+                                "type": "text",
+                                "text": """
 分析这张图片，返回 JSON 格式：
 
 {
@@ -145,19 +160,33 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
   "scene_description": "Children are sitting at a table playing with wooden blocks.",
   "scene_translation": "孩子们坐在桌子旁玩木制积木。"
 }
-                        """
-                    },
-                    {
-                        "type": "image_url",
-                        "image_url": {
-                            "url": f"data:image/jpeg;base64,{base64_image}"
-                        }
-                    }
-                ]
-            }],
-            response_format={"type": "json_object"},
-            max_tokens=500
-        )
+                                """
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+                    }],
+                    response_format={"type": "json_object"},
+                    max_tokens=500
+                )
+
+                # 成功获取响应，跳出循环
+                logger.info(f"模型 {model} 调用成功")
+                break
+
+            except Exception as e:
+                # 记录错误，尝试下一个模型
+                last_error = e
+                logger.warning(f"模型 {model} 调用失败: {str(e)}")
+                continue
+
+        # 如果所有模型都失败，抛出最后一个错误
+        if last_error is not None and 'response' not in locals():
+            raise last_error
 
         # 解析响应
         result_text = response.choices[0].message.content
