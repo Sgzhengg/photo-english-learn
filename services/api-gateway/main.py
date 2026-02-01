@@ -158,8 +158,9 @@ async def proxy_request(path: str, request: Request):
     logger.info(f"Proxying {request.method} /{path} -> {service_name} service ({proxy_path})")
 
     try:
-        # 为 vision 服务设置更长的超时时间（120秒），其他服务保持 30 秒
-        timeout = 120.0 if service_name == "vision" else 30.0
+        # vision 服务需要处理图像，设置60秒超时
+        # 其他服务保持30秒
+        timeout = 60.0 if service_name == "vision" else 30.0
         async with httpx.AsyncClient(timeout=timeout) as client:
             # 转发请求
             response = await client.request(
