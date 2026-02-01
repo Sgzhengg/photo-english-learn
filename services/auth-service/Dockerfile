@@ -16,14 +16,16 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && apt-get clean
 
 # 升级 pip
-RUN pip install --no-cache-dir --upgrade pip setuptools wheel
+RUN pip install --upgrade pip setuptools wheel
 
 # ==================== 关键优化：先复制依赖，再复制代码 ====================
 COPY requirements.txt ./
 
-# 安装 Python 依赖（使用 pip 缓存）
+# 安装 Python 依赖（使用 BuildKit 缓存）
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --no-cache-dir -r requirements.txt
+    pip install -r requirements.txt && \
+    echo "✓ Dependencies installed successfully" && \
+    python -c "import uvicorn; print(f'✓ uvicorn version: {uvicorn.__version__}')"
 
 # ==================== 最后复制代码 ====================
 COPY . .
