@@ -2,17 +2,21 @@
 认证相关工具函数
 """
 import os
+import logging
 from datetime import datetime, timedelta, timezone
 from typing import Optional, Dict, Any
 from jose import JWTError, jwt
 from passlib.context import CryptContext
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, HTTPException, status, Request
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
 
 from shared.database.models import User
 from shared.database.database import get_async_db
+
+# 配置日志
+logger = logging.getLogger(__name__)
 
 # 开发模式配置：跳过认证
 # 在环境变量中设置 SKIP_AUTH=true 来启用开发模式
@@ -68,6 +72,7 @@ def decode_access_token(
 
 
 async def get_current_user(
+    request: Request,
     credentials: HTTPAuthorizationCredentials = Depends(security),
     db: AsyncSession = Depends(get_async_db)
 ) -> User:
@@ -76,11 +81,52 @@ async def get_current_user(
 
     依赖注入函数，用于需要认证的路由
 
-    DEV MODE: 如果 SKIP_AUTH=true，返回虚拟用户
+    支持三种模式：
+    1. 正常认证模式：从 JWT Token 解析用户
+    2. 开发模式（SKIP_AUTH=true）：
+       - 如果有 X-Anonymous-User-ID 头，创建/获取匿名用户
+       - 否则返回固定的虚拟用户（user_id=999999）
     """
-    # DEV MODE: 跳过认证，返回虚拟用户
+    # DEV MODE: 跳过认证
     if SKIP_AUTH:
-        # 创建一个虚拟用户对象（不需要保存到数据库）
+        # 检查是否有匿名用户ID头
+        anonymous_user_id = request.headers.get("X-Anonymous-User-ID")
+
+        if anonymous_user_id:
+            # 匿名用户模式：查找或创建匿名用户
+            logger.info(f"[AnonymousUser] Processing anonymous user: {anonymous_user_id}")
+
+            # 尝试查找已存在的匿名用户
+            result = await db.execute(
+                select(User).where(User.username == anonymous_user_id)
+            )
+            user = result.scalar_one_or_none()
+
+            if user:
+                logger.info(f"[AnonymousUser] Found existing user: {user.user_id}")
+                return user
+            else:
+                # 创建新的匿名用户
+                logger.info(f"[AnonymousUser] Creating new anonymous user: {anonymous_user_id}")
+                new_user = User(
+                    username=anonymous_user_id,
+                    email=f"{anonymous_user_id}@anonymous.local",
+                    phone_number=None,
+                    nickname="测试用户",
+                    avatar_url=None,
+                    english_level="intermediate",
+                    daily_goal=20,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                )
+                db.add(new_user)
+                await db.commit()
+                await db.refresh(new_user)
+                logger.info(f"[AnonymousUser] Created user with ID: {new_user.user_id}")
+                return new_user
+
+        # 回退到固定虚拟用户（向后兼容）
+        logger.warning("[AnonymousUser] No anonymous ID provided, using fallback dev user")
         dev_user = User(
             user_id=999999,
             username="dev_user",
@@ -95,6 +141,7 @@ async def get_current_user(
         )
         return dev_user
 
+    # 正常认证流程
     credentials_exception = HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
         detail="无法验证认证信息",
@@ -128,6 +175,7 @@ def get_secret_key() -> str:
 
 
 async def get_current_user_optional(
+    request: Request,
     credentials: Optional[HTTPAuthorizationCredentials] = Depends(security_optional),
     db: AsyncSession = Depends(get_async_db)
 ) -> Optional[User]:
@@ -137,11 +185,52 @@ async def get_current_user_optional(
     依赖注入函数，用于可选认证的路由
     如果没有提供 Token 或 Token 无效，返回 None
 
-    DEV MODE: 如果 SKIP_AUTH=true，返回虚拟用户
+    支持三种模式：
+    1. 正常认证模式：从 JWT Token 解析用户
+    2. 开发模式（SKIP_AUTH=true）：
+       - 如果有 X-Anonymous-User-ID 头，创建/获取匿名用户
+       - 否则返回固定的虚拟用户（user_id=999999）
     """
-    # DEV MODE: 跳过认证，返回虚拟用户
+    # DEV MODE: 跳过认证
     if SKIP_AUTH:
-        # 创建一个虚拟用户对象（不需要保存到数据库）
+        # 检查是否有匿名用户ID头
+        anonymous_user_id = request.headers.get("X-Anonymous-User-ID")
+
+        if anonymous_user_id:
+            # 匿名用户模式：查找或创建匿名用户
+            logger.info(f"[AnonymousUser] Processing anonymous user (optional): {anonymous_user_id}")
+
+            # 尝试查找已存在的匿名用户
+            result = await db.execute(
+                select(User).where(User.username == anonymous_user_id)
+            )
+            user = result.scalar_one_or_none()
+
+            if user:
+                logger.info(f"[AnonymousUser] Found existing user: {user.user_id}")
+                return user
+            else:
+                # 创建新的匿名用户
+                logger.info(f"[AnonymousUser] Creating new anonymous user (optional): {anonymous_user_id}")
+                new_user = User(
+                    username=anonymous_user_id,
+                    email=f"{anonymous_user_id}@anonymous.local",
+                    phone_number=None,
+                    nickname="测试用户",
+                    avatar_url=None,
+                    english_level="intermediate",
+                    daily_goal=20,
+                    created_at=datetime.now(timezone.utc),
+                    updated_at=datetime.now(timezone.utc)
+                )
+                db.add(new_user)
+                await db.commit()
+                await db.refresh(new_user)
+                logger.info(f"[AnonymousUser] Created user with ID: {new_user.user_id}")
+                return new_user
+
+        # 回退到固定虚拟用户（向后兼容）
+        logger.warning("[AnonymousUser] No anonymous ID provided (optional), using fallback dev user")
         dev_user = User(
             user_id=999999,
             username="dev_user",
@@ -156,6 +245,7 @@ async def get_current_user_optional(
         )
         return dev_user
 
+    # 正常认证流程
     if credentials is None:
         return None
 
