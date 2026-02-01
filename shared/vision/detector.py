@@ -20,6 +20,10 @@ class ObjectDetector:
         """
         self.model = None
         self.model_name = model_name
+
+        # 支持环境变量指定的模型路径（用于 Docker 部署）
+        self.model_path = os.getenv("YOLO_MODEL_PATH")
+
         self._load_model()
 
     def _load_model(self):
@@ -28,16 +32,20 @@ class ObjectDetector:
             from ultralytics import YOLO
             import os
 
-            # 尝试加载模型，如果模型文件不存在会自动下载
-            # 使用 YOLOv8n (nano版本，适合生产环境)
-            model_path = f"{self.model_name}.pt"
-
-            # 检查模型文件是否已存在
-            if not os.path.exists(model_path):
-                print(f"YOLO model file not found, will download on first use...")
+            # 确定模型路径：优先使用环境变量
+            if self.model_path and os.path.exists(self.model_path):
+                # 使用预下载的模型文件（Docker 环境）
+                model_path = self.model_path
+                print(f"Loading pre-downloaded model from: {model_path}")
+            else:
+                # 使用默认路径，会自动下载
+                model_path = f"{self.model_name}.pt"
+                if not os.path.exists(model_path):
+                    print(f"YOLO model file not found, will download on first use...")
 
             self.model = YOLO(model_path)
-            print(f"YOLO model {self.model_name} loaded successfully")
+            print(f"✓ YOLO model {self.model_name} loaded successfully")
+            print(f"  Model path: {model_path}")
 
         except ImportError:
             # 如果没有安装 ultralytics，使用 mock 数据

@@ -1,0 +1,13 @@
+# ML 核心依赖 - 偶尔变化，独立层缓存
+# 使用 ONNX Runtime 作为轻量级推理引擎（可选）
+# onnxruntime==1.17.0
+
+# 使用 ultralytics（但会安装 PyTorch）
+# 注意：ultralytics 会自动安装 PyTorch、torchvision 等大型依赖
+ultralytics>=8.0.0
+
+# 使用 headless 版本（无 GUI 依赖），比 opencv-python 小约 200MB
+opencv-python-headless>=4.8.0
+
+# 图像处理
+pillow>=10.0.0
