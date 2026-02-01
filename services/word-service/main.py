@@ -136,6 +136,16 @@ async def lookup_word(
     return WordResponse.model_validate(new_word)
 
 
+@app.get("/vocabulary/tags", response_model=List[dict], tags=["Tags"])
+async def get_vocabulary_tags(
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    获取所有标签（/vocabulary/tags 别名）
+    """
+    return await get_tags(db)
+
+
 @app.get("/tags/list", response_model=List[dict], tags=["Tags"])
 async def get_tags(
     db: AsyncSession = Depends(get_async_db)
