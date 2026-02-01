@@ -1,20 +1,19 @@
-# Vision Service - Zeabur 优化 Dockerfile
-# 基于 Zeabur AI 诊断建议优化
+# Vision Service - 轻量级 Dockerfile（使用 OpenRouter GPT-4o-mini）
+# 无需 PyTorch、OpenCV 等庞大依赖，镜像大小从 1.5GB 降至 ~150MB
 
 FROM python:3.11-slim
 
 LABEL "language"="python"
 LABEL "framework"="fastapi"
+LABEL "provider"="OpenRouter"
+LABEL "model" "GPT-4o-mini"
 
 WORKDIR /app
 
-# 安装系统依赖
+# 安装系统依赖（无需 ML 库依赖）
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
-    libgomp1 \
-    libgl1-mesa-glx \
-    libglib2.0-0 \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
@@ -25,23 +24,24 @@ RUN pip install --upgrade pip setuptools wheel
 # ==================== 关键优化：先复制依赖，再复制代码 ====================
 COPY requirements*.txt ./
 
-# 安装 Python 依赖（使用 BuildKit 缓存，移除 --no-cache-dir）
+# 安装 Python 依赖（使用 BuildKit 缓存）
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip install -r requirements-full.txt && \
     echo "✓ Dependencies installed successfully" && \
     python -c "import uvicorn; print(f'✓ uvicorn version: {uvicorn.__version__}')" && \
-    python -c "import fastapi; print(f'✓ fastapi version: {fastapi.__version__}')"
+    python -c "import fastapi; print(f'✓ fastapi version: {fastapi.__version__}')" && \
+    python -c "import openai; print(f'✓ openai version: {openai.__version__}')"
 
-# ==================== 最后复制代码 ====================
+# ==================== 复制代码 ====================
 COPY . .
-
-# ==================== 预下载 YOLO 模型 ====================
-RUN mkdir -p /app/models
-RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', '/app/models/')" 2>/dev/null || echo "Model will download on first use"
 
 # 设置 Python 路径
 ENV PYTHONPATH="/app:$PYTHONPATH"
-ENV YOLO_MODEL_PATH="/app/models/yolov8n.pt"
+
+# 环境变量（需要在 Zeabur 控制台配置）
+# - OPENROUTER_API_KEY: OpenRouter API 密钥（必需）
+# - DATABASE_URL: PostgreSQL 连接字符串
+# - REDIS_URL: Redis 连接字符串
 
 # 暴露端口
 EXPOSE 8003
