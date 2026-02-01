@@ -91,13 +91,26 @@ async def recognize_photo(
         detections = detector.detect_objects(image_data)
         logger.info(f"检测到 {len(detections)} 个物体")
 
-        # 生成场景描述
-        description = scene_understanding.generate_description(image_data, detections)
-        logger.info(f"场景描述: {description}")
+        # 生成场景描述（英文句子 + 中文翻译）
+        # 首先生成基础描述用于上下文
+        base_description = scene_understanding.generate_description(image_data, detections, language="zh")
+        logger.info(f"基础场景描述: {base_description}")
 
-        # 简单的场景翻译（这里可以集成翻译 API）
-        # TODO: 集成真正的翻译服务
-        translation = f"场景描述：{description}"
+        # 提取检测到的物体英文名称
+        objects = [det.get('english_word', det['name']) for det in detections]
+
+        # 生成英文学习句子和中文翻译
+        sentence_result = scene_understanding.generate_sentence(
+            scene_description=base_description,
+            objects=objects,
+            difficulty="beginner"
+        )
+
+        description = sentence_result["sentence"]  # 英文句子
+        translation = sentence_result["translation"]  # 中文翻译
+
+        logger.info(f"英文句子: {description}")
+        logger.info(f"中文翻译: {translation}")
 
         # 将检测结果转换为前端期望的单词格式
         words = []

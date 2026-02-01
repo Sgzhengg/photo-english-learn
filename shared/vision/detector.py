@@ -26,16 +26,34 @@ class ObjectDetector:
         """加载模型"""
         try:
             from ultralytics import YOLO
-            self.model = YOLO(f"{self.model_name}.pt")
+            import os
+
+            # 尝试加载模型，如果模型文件不存在会自动下载
+            # 使用 YOLOv8n (nano版本，适合生产环境)
+            model_path = f"{self.model_name}.pt"
+
+            # 检查模型文件是否已存在
+            if not os.path.exists(model_path):
+                print(f"YOLO model file not found, will download on first use...")
+
+            self.model = YOLO(model_path)
+            print(f"YOLO model {self.model_name} loaded successfully")
+
         except ImportError:
             # 如果没有安装 ultralytics，使用 mock 数据
             print("Warning: ultralytics not installed, using mock detector")
+            print("To install: pip install ultralytics")
+            self.model = None
+        except Exception as e:
+            # 其他错误（如网络问题导致下载失败）
+            print(f"Warning: Failed to load YOLO model: {e}")
+            print("Falling back to mock detector")
             self.model = None
 
     def detect_objects(
         self,
         image_data: bytes,
-        confidence_threshold: float = 0.3,
+        confidence_threshold: float = 0.5,  # 提高到0.5以减少误检
         iou_threshold: float = 0.5
     ) -> List[Dict[str, Any]]:
         """
@@ -43,7 +61,7 @@ class ObjectDetector:
 
         Args:
             image_data: 图像二进制数据
-            confidence_threshold: 置信度阈值
+            confidence_threshold: 置信度阈值（默认0.5，提高以减少误检）
             iou_threshold: IOU 阈值
 
         Returns:
@@ -54,6 +72,7 @@ class ObjectDetector:
             - bbox: 边界框 [x, y, width, height]
         """
         if self.model is None:
+            print("Warning: Using mock detector - YOLO model not available")
             return self._mock_detect(image_data)
 
         # 将图像数据转换为 PIL Image
@@ -96,7 +115,9 @@ class ObjectDetector:
                     "bbox": bbox
                 })
 
-        return detections
+        # 过滤和去重
+        filtered_detections = self._filter_detections(detections)
+        return filtered_detections
 
     def _translate_to_english(self, class_name: str) -> str:
         """
@@ -111,6 +132,48 @@ class ObjectDetector:
         # YOLOv8 的类别名称已经是英文，直接返回
         # 如果需要中英文映射，可以在这里添加
         return class_name.capitalize()
+
+    def _filter_detections(self, detections: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+        """
+        过滤检测结果
+
+        - 去除重复的类别（保留置信度最高的）
+        - 过滤掉不相关的类别（如背景、辅助元素）
+
+        Args:
+            detections: 原始检测结果
+
+        Returns:
+            过滤后的检测结果
+        """
+        if not detections:
+            return []
+
+        # 定义不相关的类别（可以根据需要调整）
+        irrelevant_classes = {
+            "background", "stuff", "object", "unknown",
+            "other", "none", "void"
+        }
+
+        # 按类别分组，保留每个类别中置信度最高的
+        class_best: Dict[str, Dict[str, Any]] = {}
+        for det in detections:
+            class_name = det["name"].lower()
+
+            # 跳过不相关的类别
+            if class_name in irrelevant_classes:
+                continue
+
+            # 保留每个类别中置信度最高的
+            if class_name not in class_best or det["confidence"] > class_best[class_name]["confidence"]:
+                class_best[class_name] = det
+
+        # 转换回列表并按置信度排序
+        filtered = list(class_best.values())
+        filtered.sort(key=lambda x: x["confidence"], reverse=True)
+
+        # 最多返回前10个结果
+        return filtered[:10]
 
     def _mock_detect(self, image_data: bytes) -> List[Dict[str, Any]]:
         """
