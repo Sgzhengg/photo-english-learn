@@ -1,0 +1,36 @@
+# Vision Service - 完整依赖列表（所有依赖合并）
+# 这个文件包含所有必需的依赖，用于简化部署
+
+# 基础框架
+fastapi==0.115.0
+uvicorn[standard]==0.32.0
+pydantic==2.9.2
+pydantic-settings==2.6.0
+python-dotenv==1.0.1
+
+# 数据库
+sqlalchemy==2.0.35
+asyncpg==0.29.0
+psycopg2-binary==2.9.9
+
+# 认证
+python-jose[cryptography]==3.3.0
+passlib[bcrypt]==1.7.4
+
+# 文件处理
+python-multipart==0.0.12
+aiofiles==24.1.0
+
+# HTTP 客户端
+httpx==0.27.2
+
+# Redis
+redis==5.2.0
+
+# OpenAI API（用于 GPT-4o）
+openai>=1.0.0
+
+# ML 和图像处理
+ultralytics>=8.0.0
+opencv-python-headless>=4.8.0
+pillow>=10.0.0

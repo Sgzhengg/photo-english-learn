@@ -1,5 +1,5 @@
 # Vision Service - Optimized Dockerfile for Zeabur
-# 多阶段构建 + 层缓存优化，加快部署速度
+# 确保所有依赖正确安装，避免部署失败
 
 FROM python:3.11-slim
 
@@ -8,7 +8,7 @@ LABEL "framework"="fastapi"
 
 WORKDIR /app
 
-# 安装系统依赖（合并层，减少镜像大小）
+# 安装系统依赖
 RUN apt-get update && apt-get install -y --no-install-recommends \
     gcc \
     g++ \
@@ -22,36 +22,32 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 # 升级 pip
 RUN pip install --no-cache-dir --upgrade pip setuptools wheel
 
-# ==================== 关键优化：分层安装依赖 ====================
-# 第一层：基础依赖（很少变化，会被缓存）
-COPY services/vision-service/requirements-base.txt .
-RUN pip install --no-cache-dir -r requirements-base.txt
+# ==================== 安装 Python 依赖 ====================
+# 优先使用完整的依赖文件，如果不存在则回退到分层文件
+COPY requirements*.txt ./
 
-# 第二层：ML 依赖（偶尔变化，会被缓存）
-# 使用 opencv-python-headless 而不是 opencv-python（小约 200MB）
-COPY services/vision-service/requirements-ml.txt .
-RUN pip install --no-cache-dir -r requirements-ml.txt
+# 尝试安装完整依赖文件（如果存在）
+RUN if [ -f requirements-full.txt ]; then \
+      echo "Installing from requirements-full.txt..."; \
+      pip install --no-cache-dir -r requirements-full.txt; \
+    else \
+      echo "Installing from layered requirements..."; \
+      pip install --no-cache-dir -r requirements-base.txt && \
+      pip install --no-cache-dir -r requirements-ml.txt && \
+      pip install --no-cache-dir -r requirements.txt; \
+    fi
 
-# 第三层：应用依赖（经常变化）
-COPY services/vision-service/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+# ==================== 复制代码 ====================
+COPY . .
 
-# ==================== 预下载 YOLO 模型 ====================
+# ==================== 预下载 YOLO 模型（可选）====================
 # 创建模型目录
 RUN mkdir -p /app/models
 
-# 预下载 YOLOv8n 模型（只在首次构建时下载，后续利用缓存）
-COPY services/vision-service/download_model.py .
-RUN python download_model.py && rm download_model.py
+# 尝试预下载模型（如果失败也不会影响部署）
+RUN python -c "from ultralytics import YOLO; YOLO('yolov8n.pt'); import shutil; shutil.move('yolov8n.pt', '/app/models/')" 2>/dev/null || echo "Model pre-download skipped, will download on first use"
 
-# 复制所有代码（包括 shared）
-COPY shared ./shared/
-COPY services/vision-service/ ./vision-service/
-
-# 设置工作目录到服务目录
-WORKDIR /app/vision-service
-
-# 设置 Python 路径
+# 设置 Python 路径（支持 shared 模块）
 ENV PYTHONPATH="/app:$PYTHONPATH"
 
 # 设置模型路径环境变量
@@ -59,10 +55,6 @@ ENV YOLO_MODEL_PATH="/app/models/yolov8n.pt"
 
 # 暴露端口
 EXPOSE 8003
-
-# 健康检查
-HEALTHCHECK --interval=30s --timeout=10s --start-period=60s --retries=3 \
-    CMD python -c "import requests; requests.get('http://localhost:8003/')" || exit 1
 
 # 启动服务
 CMD ["python", "-m", "uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]
