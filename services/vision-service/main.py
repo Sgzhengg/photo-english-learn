@@ -92,20 +92,24 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
     限流：每个用户/IP 每分钟最多 30 次
 
     模型优先级（按顺序尝试）：
-    1. google/gemini-2.0-flash-exp:free（免费，快速）
-    2. openai/gpt-4o（付费，功能强）
-    3. meta-llama/llama-3.2-90b-vision-instruct（开源）
+    1. qwen/qwen-2-vl-72b-instruct（阿里巴巴 Qwen 2 VL，视觉理解强）
+    2. qwen/qwen-2-vl-7b-instruct（Qwen 2 VL 7B，快速便宜）
+    3. qwen/qwen-vl-max-latest（Qwen VL Max 最新版）
+    4. z-ai/glm-4.6v（智谱AI GLM-4.6V）
+
+    注：OpenAI/Anthropic/Google 模型在中国大陆被屏蔽，故使用这些可访问的替代方案
     """
     import logging
     logger = logging.getLogger(__name__)
 
     # 定义模型列表（按优先级排序）
-    # 使用 OpenRouter 上实际可用的视觉模型
+    # 使用 OpenRouter 上在中国可访问的视觉模型
+    # 注：OpenAI/Anthropic/Google 模型在中国大陆被屏蔽（403错误）
     MODELS = [
-        "google/gemini-2.0-flash-exp:free",  # Google Gemini 2.0 Flash（免费，首选）
-        "google/gemini-flash-1.5",            # Google Gemini Flash 1.5（稳定）
-        "anthropic/claude-3-haiku",           # Claude 3 Haiku（快速，便宜）
-        "openai/gpt-4o",                      # GPT-4o 完整版（付费，功能强）
+        "qwen/qwen-2-vl-72b-instruct",       # Qwen 2 VL 72B（阿里巴巴，视觉强）
+        "qwen/qwen-2-vl-7b-instruct",        # Qwen 2 VL 7B（快速，便宜）
+        "qwen/qwen-vl-max-latest",           # Qwen VL Max（最新版本）
+        "z-ai/glm-4.6v",                     # GLM-4.6V（智谱AI，支持视觉）
     ]
 
     try:
