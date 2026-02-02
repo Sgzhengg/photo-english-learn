@@ -53,7 +53,7 @@ export function VocabularyLibraryPage() {
         console.log('📥 [Vocabulary Library] Tags API result:', tagsResult);
 
         if (tagsResult.success && tagsResult.data) {
-          setTags(tagsResult.data);
+          setTags(tagsResult.data as any);
         } else {
           console.error('❌ [Vocabulary Library] Failed to fetch tags:', tagsResult.error);
         }

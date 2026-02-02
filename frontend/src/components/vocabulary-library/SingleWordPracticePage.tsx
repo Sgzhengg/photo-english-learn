@@ -44,8 +44,8 @@ export function SingleWordPracticePage() {
       try {
         const result = await vocabularyApi.getWord(wordId);
         if (result.success && result.data) {
-          setWord(result.data);
-          generateQuestions(result.data);
+          setWord(result.data as any);
+          generateQuestions(result.data as any);
         } else {
           console.error('Failed to fetch word:', result.error);
           navigate('/app/vocabulary');
