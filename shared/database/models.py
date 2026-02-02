@@ -242,6 +242,12 @@ class UserWordCreate(BaseModel):
     word_id: int
     scene_id: Optional[int] = None
     tag_id: Optional[int] = 1
+    # 可选：直接提供单词详情（来自 vision-service 的识别结果）
+    chinese_meaning: Optional[str] = None
+    phonetic_us: Optional[str] = None
+    phonetic_uk: Optional[str] = None
+    example_sentence: Optional[str] = None
+    example_translation: Optional[str] = None
 
 
 class UserWordResponse(BaseModel):

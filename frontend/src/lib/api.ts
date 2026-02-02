@@ -414,9 +414,26 @@ export const vocabularyApi = {
   /**
    * Add word to vocabulary
    * POST /words/add (routes to word-service /add)
+   * @param wordId - 单词 ID
+   * @param sceneId - 场景 ID（可选）
+   * @param wordDetails - 单词详情（可选，来自 vision-service）
    */
-  addWord: (wordId: number, sceneId?: number) =>
-    api.post<import('@/types').Word>('/words/add', { word_id: wordId, scene_id: sceneId }),
+  addWord: (
+    wordId: number,
+    sceneId?: number,
+    wordDetails?: {
+      chinese_meaning?: string;
+      phonetic_us?: string;
+      phonetic_uk?: string;
+      example_sentence?: string;
+      example_translation?: string;
+    }
+  ) =>
+    api.post<import('@/types').Word>('/words/add', {
+      word_id: wordId,
+      scene_id: sceneId,
+      ...wordDetails
+    }),
 
   /**
    * Get word details

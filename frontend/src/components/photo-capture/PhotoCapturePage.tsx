@@ -87,7 +87,7 @@ export function PhotoCapturePage() {
   const handleSaveWord = async (wordId: string) => {
     if (!currentPhoto) return;
 
-    // Find the word to get its English word text
+    // Find the word to get its English word text and details from vision-service
     const word = currentPhoto.recognizedWords.find(w => w.id === wordId);
     if (!word) return;
 
@@ -107,8 +107,16 @@ export function PhotoCapturePage() {
       console.log('✅ Found word_id:', realWordId);
 
       // Step 2: Add the word to vocabulary using the real word_id
-      console.log('💾 [Step 2] Adding word to vocabulary, word_id:', realWordId);
-      const addResult = await vocabularyApi.addWord(realWordId);
+      // Pass vision-service translation data to avoid re-calling translation API
+      console.log('💾 [Step 2] Adding word to vocabulary with vision-service data');
+      const addResult = await vocabularyApi.addWord(
+        realWordId,
+        undefined, // sceneId
+        {
+          chinese_meaning: word.definition, // vision-service 提供的中文翻译
+          phonetic_us: word.phonetic, // vision-service 提供的音标
+        }
+      );
       console.log('📥 [Word Save] Add result:', JSON.stringify(addResult, null, 2));
 
       if (addResult.success) {

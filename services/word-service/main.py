@@ -261,8 +261,16 @@ async def add_word(
     - **word_id**: 单词 ID
     - **scene_id**: 来源场景 ID（可选）
     - **tag_id**: 标签 ID（默认为 1 - 生词）
+    - **chinese_meaning**: 中文释义（可选，来自 vision-service）
+    - **phonetic_us**: 美式音标（可选，来自 vision-service）
+    - **phonetic_uk**: 英式音标（可选，来自 vision-service）
+    - **example_sentence**: 例句（可选，来自 vision-service）
+    - **example_translation**: 例句翻译（可选，来自 vision-service）
 
     支持匿名用户（通过 X-Anonymous-User-ID 头）
+
+    注意：如果提供了单词详情（chinese_meaning 等），会更新数据库中的单词记录，
+    避免重复调用翻译 API。
     """
     # 检查用户是否已认证
     if not current_user:
@@ -287,6 +295,34 @@ async def add_word(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="该单词已在生词库中"
         )
+
+    # 如果提供了单词详情，更新数据库中的单词记录（使用 vision-service 的识别结果）
+    if word_data.chinese_meaning or word_data.phonetic_us:
+        try:
+            word_result = await db.execute(select(Word).where(Word.word_id == word_data.word_id))
+            word = word_result.scalar_one_or_none()
+
+            if word:
+                # 更新现有单词的详情
+                update_data = {}
+                if word_data.chinese_meaning and not word.chinese_meaning:
+                    update_data['chinese_meaning'] = word_data.chinese_meaning
+                if word_data.phonetic_us and not word.phonetic_us:
+                    update_data['phonetic_us'] = word_data.phonetic_us
+                if word_data.phonetic_uk and not word.phonetic_uk:
+                    update_data['phonetic_uk'] = word_data.phonetic_uk
+                if word_data.example_sentence and not word.example_sentence:
+                    update_data['example_sentence'] = word_data.example_sentence
+                if word_data.example_translation and not word.example_translation:
+                    update_data['example_translation'] = word_data.example_translation
+
+                if update_data:
+                    for key, value in update_data.items():
+                        setattr(word, key, value)
+                    await db.commit()
+                    logger.info(f"✅ Updated word {word.word_id} with vision-service data: {list(update_data.keys())}")
+        except Exception as e:
+            logger.warning(f"Failed to update word details (non-critical): {e}")
 
     # 创建生词记录
     new_user_word = UserWord(
