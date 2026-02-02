@@ -111,11 +111,9 @@ async def get_current_user(
                 new_user = User(
                     username=anonymous_user_id,
                     email=f"{anonymous_user_id}@anonymous.local",
-                    phone_number=None,
+                    password_hash="",  # Will be set later
                     nickname="测试用户",
                     avatar_url=None,
-                    english_level="intermediate",
-                    daily_goal=20,
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
                 )
@@ -131,11 +129,9 @@ async def get_current_user(
             user_id=999999,
             username="dev_user",
             email="dev@example.com",
-            phone_number=None,
+            password_hash="",  # Empty hash for dev user
             nickname="开发用户",
             avatar_url=None,
-            english_level="intermediate",
-            daily_goal=20,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc)
         )
@@ -215,11 +211,9 @@ async def get_current_user_optional(
                 new_user = User(
                     username=anonymous_user_id,
                     email=f"{anonymous_user_id}@anonymous.local",
-                    phone_number=None,
+                    password_hash="",  # Will be set later
                     nickname="测试用户",
                     avatar_url=None,
-                    english_level="intermediate",
-                    daily_goal=20,
                     created_at=datetime.now(timezone.utc),
                     updated_at=datetime.now(timezone.utc)
                 )
@@ -235,11 +229,9 @@ async def get_current_user_optional(
             user_id=999999,
             username="dev_user",
             email="dev@example.com",
-            phone_number=None,
+            password_hash="",  # Empty hash for dev user
             nickname="开发用户",
             avatar_url=None,
-            english_level="intermediate",
-            daily_goal=20,
             created_at=datetime.now(timezone.utc),
             updated_at=datetime.now(timezone.utc)
         )
