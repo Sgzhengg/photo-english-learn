@@ -1,0 +1,519 @@
+{
+  "_meta": {
+    "models": {
+      "words": "用户从拍照识别中保存的生词，包含单词信息、例句、学习记录和标签分类。",
+      "tags": "用于对生词进行分类管理的标签，包括系统预设标签和用户自定义标签。"
+    },
+    "relationships": [
+      "每个 Word 可以关联多个 Tag（用于分类管理）",
+      "每个 Word 记录来源的 Photo（帮助用户回忆学习场景）",
+      "每个 Word 包含学习记录（复习次数、掌握程度等）"
+    ]
+  },
+  "words": [
+    {
+      "id": "word-001",
+      "word": "laptop",
+      "phonetic": "/ˈlæptɒp/",
+      "definition": "笔记本电脑",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "I'm working on my laptop at the coffee shop.",
+          "translation": "我正在咖啡厅用笔记本电脑工作。",
+          "fromPhoto": "photo-001"
+        },
+        {
+          "sentence": "My laptop battery lasts for about 8 hours.",
+          "translation": "我的笔记本电脑电池续航大约8小时。",
+          "fromPhoto": null
+        }
+      ],
+      "pronunciationUrl": "/audio/laptop.mp3",
+      "sourcePhoto": {
+        "id": "photo-001",
+        "thumbnailUrl": "/sample-images/coffee-shop-thumb.jpg",
+        "location": "咖啡厅",
+        "capturedAt": "2025-01-26T10:30:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-26T10:35:00Z",
+        "reviewCount": 3,
+        "masteryLevel": "familiar",
+        "lastReviewDate": "2025-01-25T09:00:00Z"
+      },
+      "tags": ["tech", "work"]
+    },
+    {
+      "id": "word-002",
+      "word": "coffee",
+      "phonetic": "/ˈkɒfi/",
+      "definition": "咖啡",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "Would you like some coffee?",
+          "translation": "你想喝点咖啡吗？",
+          "fromPhoto": "photo-001"
+        },
+        {
+          "sentence": "I drink two cups of coffee every morning.",
+          "translation": "我每天早上喝两杯咖啡。",
+          "fromPhoto": null
+        }
+      ],
+      "pronunciationUrl": "/audio/coffee.mp3",
+      "sourcePhoto": {
+        "id": "photo-001",
+        "thumbnailUrl": "/sample-images/coffee-shop-thumb.jpg",
+        "location": "咖啡厅",
+        "capturedAt": "2025-01-26T10:30:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-26T10:35:00Z",
+        "reviewCount": 5,
+        "masteryLevel": "mastered",
+        "lastReviewDate": "2025-01-26T08:30:00Z"
+      },
+      "tags": ["daily", "food"]
+    },
+    {
+      "id": "word-003",
+      "word": "cup",
+      "phonetic": "/kʌp/",
+      "definition": "杯子",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "This cup is empty.",
+          "translation": "这个杯子是空的。",
+          "fromPhoto": "photo-001"
+        }
+      ],
+      "pronunciationUrl": "/audio/cup.mp3",
+      "sourcePhoto": {
+        "id": "photo-001",
+        "thumbnailUrl": "/sample-images/coffee-shop-thumb.jpg",
+        "location": "咖啡厅",
+        "capturedAt": "2025-01-26T10:30:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-26T10:35:00Z",
+        "reviewCount": 1,
+        "masteryLevel": "learning",
+        "lastReviewDate": "2025-01-26T10:35:00Z"
+      },
+      "tags": ["daily"]
+    },
+    {
+      "id": "word-005",
+      "word": "computer",
+      "phonetic": "/kəmˈpjuːtə/",
+      "definition": "电脑",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "The computer setup includes a keyboard and monitor.",
+          "translation": "这台电脑配置包括键盘和显示器。",
+          "fromPhoto": "photo-002"
+        }
+      ],
+      "pronunciationUrl": "/audio/computer.mp3",
+      "sourcePhoto": {
+        "id": "photo-002",
+        "thumbnailUrl": "/sample-images/office-thumb.jpg",
+        "location": "办公室",
+        "capturedAt": "2025-01-26T14:15:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-26T14:20:00Z",
+        "reviewCount": 2,
+        "masteryLevel": "learning",
+        "lastReviewDate": "2025-01-25T14:00:00Z"
+      },
+      "tags": ["tech", "work"]
+    },
+    {
+      "id": "word-006",
+      "word": "keyboard",
+      "phonetic": "/ˈkiːbɔːd/",
+      "definition": "键盘",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "I need a new keyboard for my computer.",
+          "translation": "我需要为我的电脑配一个新键盘。",
+          "fromPhoto": "photo-002"
+        }
+      ],
+      "pronunciationUrl": "/audio/keyboard.mp3",
+      "sourcePhoto": {
+        "id": "photo-002",
+        "thumbnailUrl": "/sample-images/office-thumb.jpg",
+        "location": "办公室",
+        "capturedAt": "2025-01-26T14:15:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-26T14:20:00Z",
+        "reviewCount": 1,
+        "masteryLevel": "learning",
+        "lastReviewDate": "2025-01-26T14:20:00Z"
+      },
+      "tags": ["tech"]
+    },
+    {
+      "id": "word-007",
+      "word": "monitor",
+      "phonetic": "/ˈmɒnɪtə/",
+      "definition": "显示器",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "This monitor has excellent color accuracy.",
+          "translation": "这个显示器的色彩还原度很高。",
+          "fromPhoto": "photo-002"
+        }
+      ],
+      "pronunciationUrl": "/audio/monitor.mp3",
+      "sourcePhoto": {
+        "id": "photo-002",
+        "thumbnailUrl": "/sample-images/office-thumb.jpg",
+        "location": "办公室",
+        "capturedAt": "2025-01-26T14:15:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-26T14:20:00Z",
+        "reviewCount": 4,
+        "masteryLevel": "familiar",
+        "lastReviewDate": "2025-01-25T16:00:00Z"
+      },
+      "tags": ["tech", "work"]
+    },
+    {
+      "id": "word-009",
+      "word": "tree",
+      "phonetic": "/triː/",
+      "definition": "树",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "A tall tree stands next to the bench.",
+          "translation": "一棵高树立在长椅旁边。",
+          "fromPhoto": "photo-003"
+        }
+      ],
+      "pronunciationUrl": "/audio/tree.mp3",
+      "sourcePhoto": {
+        "id": "photo-003",
+        "thumbnailUrl": "/sample-images/park-thumb.jpg",
+        "location": "公园",
+        "capturedAt": "2025-01-25T18:45:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-25T18:50:00Z",
+        "reviewCount": 2,
+        "masteryLevel": "familiar",
+        "lastReviewDate": "2025-01-25T20:00:00Z"
+      },
+      "tags": ["nature"]
+    },
+    {
+      "id": "word-010",
+      "word": "bench",
+      "phonetic": "/bentʃ/",
+      "definition": "长椅",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "The bench where a bird is resting.",
+          "translation": "一只鸟正在上面休息的长椅。",
+          "fromPhoto": "photo-003"
+        }
+      ],
+      "pronunciationUrl": "/audio/bench.mp3",
+      "sourcePhoto": {
+        "id": "photo-003",
+        "thumbnailUrl": "/sample-images/park-thumb.jpg",
+        "location": "公园",
+        "capturedAt": "2025-01-25T18:45:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-25T18:50:00Z",
+        "reviewCount": 1,
+        "masteryLevel": "learning",
+        "lastReviewDate": "2025-01-25T18:50:00Z"
+      },
+      "tags": ["nature", "daily"]
+    },
+    {
+      "id": "word-011",
+      "word": "bird",
+      "phonetic": "/bɜːd/",
+      "definition": "鸟",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "A bird is resting on the branch.",
+          "translation": "一只鸟正在树枝上休息。",
+          "fromPhoto": "photo-003"
+        }
+      ],
+      "pronunciationUrl": "/audio/bird.mp3",
+      "sourcePhoto": {
+        "id": "photo-003",
+        "thumbnailUrl": "/sample-images/park-thumb.jpg",
+        "location": "公园",
+        "capturedAt": "2025-01-25T18:45:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-25T18:50:00Z",
+        "reviewCount": 6,
+        "masteryLevel": "mastered",
+        "lastReviewDate": "2025-01-26T07:00:00Z"
+      },
+      "tags": ["nature", "animals"]
+    },
+    {
+      "id": "word-013",
+      "word": "refrigerator",
+      "phonetic": "/rɪˈfrɪdʒəreɪtə/",
+      "definition": "冰箱",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "The modern kitchen has a stainless steel refrigerator.",
+          "translation": "这个现代化厨房有一个不锈钢冰箱。",
+          "fromPhoto": "photo-004"
+        }
+      ],
+      "pronunciationUrl": "/audio/refrigerator.mp3",
+      "sourcePhoto": {
+        "id": "photo-004",
+        "thumbnailUrl": "/sample-images/kitchen-thumb.jpg",
+        "location": "厨房",
+        "capturedAt": "2025-01-24T08:20:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-24T08:25:00Z",
+        "reviewCount": 2,
+        "masteryLevel": "learning",
+        "lastReviewDate": "2025-01-24T09:00:00Z"
+      },
+      "tags": ["home", "appliances"]
+    },
+    {
+      "id": "word-014",
+      "word": "stove",
+      "phonetic": "/stəʊv/",
+      "definition": "炉灶",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "She cooked dinner on the gas stove.",
+          "translation": "她在煤气灶上做了晚餐。",
+          "fromPhoto": "photo-004"
+        }
+      ],
+      "pronunciationUrl": "/audio/stove.mp3",
+      "sourcePhoto": {
+        "id": "photo-004",
+        "thumbnailUrl": "/sample-images/kitchen-thumb.jpg",
+        "location": "厨房",
+        "capturedAt": "2025-01-24T08:20:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-24T08:25:00Z",
+        "reviewCount": 1,
+        "masteryLevel": "learning",
+        "lastReviewDate": "2025-01-24T08:25:00Z"
+      },
+      "tags": ["home", "appliances"]
+    },
+    {
+      "id": "word-015",
+      "word": "cabinet",
+      "phonetic": "/ˈkæbɪnɪt/",
+      "definition": "橱柜",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "The kitchen cabinet is made of oak wood.",
+          "translation": "这个厨房橱柜是由橡木制成的。",
+          "fromPhoto": "photo-004"
+        }
+      ],
+      "pronunciationUrl": "/audio/cabinet.mp3",
+      "sourcePhoto": {
+        "id": "photo-004",
+        "thumbnailUrl": "/sample-images/kitchen-thumb.jpg",
+        "location": "厨房",
+        "capturedAt": "2025-01-24T08:20:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-24T08:25:00Z",
+        "reviewCount": 3,
+        "masteryLevel": "familiar",
+        "lastReviewDate": "2025-01-25T10:00:00Z"
+      },
+      "tags": ["home"]
+    },
+    {
+      "id": "word-017",
+      "word": "bookshelf",
+      "phonetic": "/ˈbʊkʃelf/",
+      "definition": "书架",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "The bookshelf holds many books.",
+          "translation": "书架上放了很多书。",
+          "fromPhoto": "photo-005"
+        }
+      ],
+      "pronunciationUrl": "/audio/bookshelf.mp3",
+      "sourcePhoto": {
+        "id": "photo-005",
+        "thumbnailUrl": "/sample-images/library-thumb.jpg",
+        "location": "图书馆",
+        "capturedAt": "2025-01-23T16:50:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-23T16:55:00Z",
+        "reviewCount": 1,
+        "masteryLevel": "learning",
+        "lastReviewDate": "2025-01-23T16:55:00Z"
+      },
+      "tags": ["home", "education"]
+    },
+    {
+      "id": "word-018",
+      "word": "lamp",
+      "phonetic": "/læmp/",
+      "definition": "台灯",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "The reading lamp provides good lighting.",
+          "translation": "这盏阅读灯提供良好的照明。",
+          "fromPhoto": "photo-005"
+        }
+      ],
+      "pronunciationUrl": "/audio/lamp.mp3",
+      "sourcePhoto": {
+        "id": "photo-005",
+        "thumbnailUrl": "/sample-images/library-thumb.jpg",
+        "location": "图书馆",
+        "capturedAt": "2025-01-23T16:50:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-23T16:55:00Z",
+        "reviewCount": 2,
+        "masteryLevel": "familiar",
+        "lastReviewDate": "2025-01-24T19:00:00Z"
+      },
+      "tags": ["home", "daily"]
+    },
+    {
+      "id": "word-020",
+      "word": "desk",
+      "phonetic": "/desk/",
+      "definition": "书桌",
+      "partOfSpeech": "n. 名词",
+      "examples": [
+        {
+          "sentence": "My desk is always messy.",
+          "translation": "我的书桌总是很乱。",
+          "fromPhoto": "photo-005"
+        }
+      ],
+      "pronunciationUrl": "/audio/desk.mp3",
+      "sourcePhoto": {
+        "id": "photo-005",
+        "thumbnailUrl": "/sample-images/library-thumb.jpg",
+        "location": "图书馆",
+        "capturedAt": "2025-01-23T16:50:00Z"
+      },
+      "learningRecord": {
+        "addedDate": "2025-01-23T16:55:00Z",
+        "reviewCount": 4,
+        "masteryLevel": "mastered",
+        "lastReviewDate": "2025-01-26T11:00:00Z"
+      },
+      "tags": ["home", "work", "education"]
+    }
+  ],
+  "tags": [
+    {
+      "id": "tag-tech",
+      "name": "科技词汇",
+      "type": "preset",
+      "color": "blue"
+    },
+    {
+      "id": "tag-work",
+      "name": "工作相关",
+      "type": "preset",
+      "color": "indigo"
+    },
+    {
+      "id": "tag-daily",
+      "name": "日常词汇",
+      "type": "preset",
+      "color": "green"
+    },
+    {
+      "id": "tag-food",
+      "name": "食物饮品",
+      "type": "preset",
+      "color": "orange"
+    },
+    {
+      "id": "tag-nature",
+      "name": "自然景观",
+      "type": "preset",
+      "color": "emerald"
+    },
+    {
+      "id": "tag-animals",
+      "name": "动物",
+      "type": "preset",
+      "color": "amber"
+    },
+    {
+      "id": "tag-home",
+      "name": "家居用品",
+      "type": "preset",
+      "color": "purple"
+    },
+    {
+      "id": "tag-appliances",
+      "name": "家用电器",
+      "type": "preset",
+      "color": "cyan"
+    },
+    {
+      "id": "tag-education",
+      "name": "教育学习",
+      "type": "preset",
+      "color": "rose"
+    },
+    {
+      "id": "tag-exam",
+      "name": "考试必备",
+      "type": "preset",
+      "color": "red"
+    },
+    {
+      "id": "tag-business",
+      "name": "商务英语",
+      "type": "custom",
+      "color": "slate"
+    },
+    {
+      "id": "tag-travel",
+      "name": "旅行词汇",
+      "type": "custom",
+      "color": "teal"
+    }
+  ]
+}

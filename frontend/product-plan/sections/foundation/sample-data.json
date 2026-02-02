@@ -1,0 +1,116 @@
+{
+  "users": [
+    {
+      "id": "user-001",
+      "username": "john_doe",
+      "email": "john.doe@example.com",
+      "phone": "+86 138 0000 0000",
+      "nickname": "John学英语",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+      "gender": "male",
+      "birthYear": 1995,
+      "englishLevel": "intermediate",
+      "dailyGoal": "20",
+      "status": "active",
+      "createdAt": "2025-01-15T08:30:00Z",
+      "lastLoginAt": "2025-01-27T22:15:00Z",
+      "hasCompletedOnboarding": true
+    },
+    {
+      "id": "user-002",
+      "username": "jane_smith",
+      "email": "jane.smith@example.com",
+      "phone": "+86 139 0000 0000",
+      "nickname": "英语爱好者Jane",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Jane",
+      "gender": "female",
+      "birthYear": 1998,
+      "englishLevel": "beginner",
+      "dailyGoal": "10",
+      "status": "active",
+      "createdAt": "2025-01-20T10:00:00Z",
+      "lastLoginAt": "2025-01-27T09:30:00Z",
+      "hasCompletedOnboarding": true
+    },
+    {
+      "id": "user-003",
+      "username": "bob_wilson",
+      "email": "bob.wilson@example.com",
+      "phone": "+86 137 0000 0000",
+      "nickname": "Bob",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=Bob",
+      "gender": "male",
+      "birthYear": 1992,
+      "englishLevel": "advanced",
+      "dailyGoal": "50",
+      "status": "active",
+      "createdAt": "2025-01-10T14:20:00Z",
+      "lastLoginAt": "2025-01-26T18:45:00Z",
+      "hasCompletedOnboarding": true
+    }
+  ],
+  "authResponse": {
+    "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTAwMSIsImVtYWlsIjoiam9obi5kb2VAZXhhbXBsZS5jb20iLCJpYXQiOjE3Mzc4MDk3MDAsImV4cCI6MTczNzgxMzMwMH0.signature",
+    "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJ1c2VySWQiOiJ1c2VyLTAwMSIsInR5cGUiOiJyZWZyZXNoIiwiaWF0IjoxNzM3ODA5NzAwLCJleHAiOjE3Mzg0MTQ1MDB9.signature",
+    "expiresAt": 1737813300,
+    "user": {
+      "id": "user-001",
+      "username": "john_doe",
+      "email": "john.doe@example.com",
+      "phone": "+86 138 0000 0000",
+      "nickname": "John学英语",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+      "gender": "male",
+      "birthYear": 1995,
+      "englishLevel": "intermediate",
+      "dailyGoal": "20",
+      "status": "active",
+      "createdAt": "2025-01-15T08:30:00Z",
+      "lastLoginAt": "2025-01-27T22:15:00Z",
+      "hasCompletedOnboarding": true
+    }
+  },
+  "onboardingData": {
+    "steps": [
+      {
+        "step": 0,
+        "title": "欢迎使用 PhotoEnglish",
+        "description": "通过拍照识别技术，轻松积累英语词汇",
+        "icon": "📸"
+      },
+      {
+        "step": 1,
+        "title": "拍照识别生词",
+        "description": "遇到不认识的单词，拍一下即可保存到生词库，AI 自动识别并提供释义",
+        "icon": "🔍"
+      },
+      {
+        "step": 2,
+        "title": "语境化练习",
+        "description": "AI 生成包含生词的真实场景句子，通过填空和翻译练习，真正会用单词",
+        "icon": "✍️"
+      },
+      {
+        "step": 3,
+        "title": "设置学习目标",
+        "description": "告诉我们您的英语水平和每日学习目标，为您定制个性化学习计划",
+        "icon": "🎯"
+      }
+    ],
+    "englishLevels": [
+      { "value": "beginner", "label": "初级", "description": "刚刚开始学习英语" },
+      { "value": "intermediate", "label": "中级", "description": "有一定基础，想提升应用能力" },
+      { "value": "advanced", "label": "高级", "description": "英语水平较好，追求精通" }
+    ],
+    "dailyGoals": [
+      { "value": "10", "label": "每天 10 个单词", "description": "轻松学习，养成习惯" },
+      { "value": "20", "label": "每天 20 个单词", "description": "稳步提升，推荐选择" },
+      { "value": "30", "label": "每天 30 个单词", "description": "进阶学习，快速积累" },
+      { "value": "50", "label": "每天 50 个单词", "description": "挑战自我，高强度学习" }
+    ],
+    "defaultPreferences": {
+      "englishLevel": "intermediate",
+      "dailyGoal": "20"
+    }
+  }
+}

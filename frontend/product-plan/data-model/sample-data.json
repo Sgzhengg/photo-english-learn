@@ -1,0 +1,262 @@
+{
+  "users": [
+    {
+      "id": "user-001",
+      "username": "john_doe",
+      "email": "john.doe@example.com",
+      "phone": "+86 138 0000 0000",
+      "nickname": "John学英语",
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=John",
+      "englishLevel": "intermediate",
+      "dailyGoal": "20",
+      "status": "active",
+      "createdAt": "2025-01-15T08:30:00Z",
+      "lastLoginAt": "2025-01-28T22:00:00Z",
+      "hasCompletedOnboarding": true
+    }
+  ],
+  "photos": [
+    {
+      "id": "photo-001",
+      "userId": "user-001",
+      "imageUrl": "https://example.com/photos/photo-001.jpg",
+      "thumbnailUrl": "https://example.com/photos/photo-001-thumb.jpg",
+      "capturedAt": "2025-01-20T10:30:00Z",
+      "location": "上海",
+      "status": "completed",
+      "recognizedWords": [
+        {
+          "id": "word-001",
+          "word": "serendipity",
+          "phonetic": "/ˌserənˈdɪpəti/",
+          "definition": "意外发现珍奇事物的本领",
+          "partOfSpeech": "noun",
+          "pronunciationUrl": "https://example.com/audio/serendipity.mp3",
+          "positionInSentence": 2
+        },
+        {
+          "id": "word-002",
+          "word": "ephemeral",
+          "phonetic": "/ɪˈfemərəl/",
+          "definition": "短暂的，瞬息的",
+          "partOfSpeech": "adjective",
+          "pronunciationUrl": "https://example.com/audio/ephemeral.mp3",
+          "positionInSentence": 5
+        }
+      ],
+      "sceneDescription": "The serendipity of finding this ephemeral beauty in the city",
+      "sceneTranslation": "在城市中发现这种短暂美丽，纯属意外之喜"
+    }
+  ],
+  "words": [
+    {
+      "id": "word-001",
+      "userId": "user-001",
+      "word": "serendipity",
+      "phonetic": "/ˌserənˈdɪpəti/",
+      "definition": "意外发现珍奇事物的本领",
+      "partOfSpeech": "noun",
+      "pronunciationUrl": "https://example.com/audio/serendipity.mp3",
+      "examples": [
+        {
+          "english": "Finding this shop was pure serendipity.",
+          "chinese": "发现这家店纯属意外之喜。"
+        },
+        {
+          "english": "We met by serendipity at the coffee shop.",
+          "chinese": "我们在咖啡店偶然相遇。"
+        }
+      ],
+      "tags": ["工作词汇", "高级"],
+      "masteryLevel": "familiar",
+      "addedAt": "2025-01-20T10:30:00Z",
+      "sourcePhotoId": "photo-001"
+    },
+    {
+      "id": "word-002",
+      "userId": "user-001",
+      "word": "ephemeral",
+      "phonetic": "/ɪˈfemərəl/",
+      "definition": "短暂的，瞬息的",
+      "partOfSpeech": "adjective",
+      "pronunciationUrl": "https://example.com/audio/ephemeral.mp3",
+      "examples": [
+        {
+          "english": "Fashion is ephemeral, changing every season.",
+          "chinese": "时尚是短暂的，每个季节都在变化。"
+        }
+      ],
+      "tags": ["描述性词汇"],
+      "masteryLevel": "learning",
+      "addedAt": "2025-01-20T10:30:00Z",
+      "sourcePhotoId": "photo-001"
+    }
+  ],
+  "tags": [
+    {
+      "id": "tag-001",
+      "userId": "user-001",
+      "name": "工作词汇",
+      "color": "#6366f1",
+      "createdAt": "2025-01-15T09:00:00Z"
+    },
+    {
+      "id": "tag-002",
+      "userId": "user-001",
+      "name": "考试必备",
+      "color": "#84cc16",
+      "createdAt": "2025-01-16T14:30:00Z"
+    },
+    {
+      "id": "tag-003",
+      "userId": "user-001",
+      "name": "高级",
+      "color": "#f59e0b",
+      "createdAt": "2025-01-18T11:00:00Z"
+    }
+  ],
+  "practices": [
+    {
+      "id": "practice-001",
+      "userId": "user-001",
+      "wordId": "word-001",
+      "type": "fill-blank",
+      "question": "The ___ was a pleasant surprise.",
+      "hint": "serendipity",
+      "userAnswer": "serendipity",
+      "correctAnswer": "serendipity",
+      "isCorrect": true,
+      "practicedAt": "2025-01-25T15:30:00Z",
+      "duration": 15
+    },
+    {
+      "id": "practice-002",
+      "userId": "user-001",
+      "wordId": "word-002",
+      "type": "multiple-choice",
+      "question": "意外发现珍奇事物的本领",
+      "userAnswer": "serendipity",
+      "correctAnswer": "serendipity",
+      "isCorrect": true,
+      "practicedAt": "2025-01-25T15:35:00Z",
+      "duration": 10
+    }
+  ],
+  "reviews": [
+    {
+      "id": "review-001",
+      "userId": "user-001",
+      "wordId": "word-001",
+      "result": "correct",
+      "reviewedAt": "2025-01-25T15:30:00Z",
+      "nextReviewAt": "2025-01-28T15:30:00Z",
+      "interval": 1,
+      "easeFactor": 2.5
+    },
+    {
+      "id": "review-002",
+      "userId": "user-001",
+      "wordId": "word-002",
+      "result": "incorrect",
+      "reviewedAt": "2025-01-26T10:00:00Z",
+      "nextReviewAt": "2025-01-27T10:00:00Z",
+      "interval": 1,
+      "easeFactor": 2.0
+    }
+  ],
+  "progress": {
+    "id": "progress-001",
+    "userId": "user-001",
+    "totalWords": 256,
+    "todayAdded": 8,
+    "todayPracticed": 3,
+    "todayAccuracy": 85,
+    "streakDays": 7,
+    "totalDays": 45,
+    "masteryDistribution": {
+      "new": 11,
+      "learning": 80,
+      "familiar": 120,
+      "mastered": 45
+    },
+    "updatedAt": "2025-01-28T22:00:00Z"
+  },
+  "dailyActivities": [
+    {
+      "date": "2025-01-22",
+      "added": 12,
+      "practiced": 5,
+      "accuracy": 82
+    },
+    {
+      "date": "2025-01-23",
+      "added": 8,
+      "practiced": 3,
+      "accuracy": 90
+    },
+    {
+      "date": "2025-01-24",
+      "added": 15,
+      "practiced": 6,
+      "accuracy": 78
+    },
+    {
+      "date": "2025-01-25",
+      "added": 10,
+      "practiced": 4,
+      "accuracy": 85
+    },
+    {
+      "date": "2025-01-26",
+      "added": 5,
+      "practiced": 7,
+      "accuracy": 88
+    },
+    {
+      "date": "2025-01-27",
+      "added": 0,
+      "practiced": 2,
+      "accuracy": 92
+    },
+    {
+      "date": "2025-01-28",
+      "added": 8,
+      "practiced": 3,
+      "accuracy": 85
+    }
+  ],
+  "achievements": [
+    {
+      "id": "first-word",
+      "name": "初学者",
+      "icon": "🌱",
+      "description": "保存第一个单词",
+      "unlocked": true,
+      "unlockedAt": "2025-01-15T09:00:00Z"
+    },
+    {
+      "id": "streak-7",
+      "name": "坚持一周",
+      "icon": "🔥",
+      "description": "连续学习7天",
+      "unlocked": true,
+      "unlockedAt": "2025-01-22T20:00:00Z"
+    },
+    {
+      "id": "words-100",
+      "name": "百词斩",
+      "icon": "💯",
+      "description": "掌握100个单词",
+      "unlocked": false,
+      "progress": "56/100"
+    },
+    {
+      "id": "streak-30",
+      "name": "月度冠军",
+      "icon": "🏆",
+      "description": "连续学习30天",
+      "unlocked": false,
+      "progress": "7/30"
+    }
+  ]
+}

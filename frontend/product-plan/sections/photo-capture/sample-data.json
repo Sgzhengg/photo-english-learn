@@ -1,0 +1,266 @@
+{
+  "_meta": {
+    "models": {
+      "photo": "每次拍照识别的记录，包含图片信息、识别出的单词列表和 AI 生成的场景描述句子。",
+      "word": "从照片中识别出的英文单词，包含单词拼写、音标、中文释义和发音按钮。"
+    },
+    "relationships": [
+      "每张 Photo 包含多个 Word（通过 OCR 识别出的物体）",
+      "每张 Photo 有一个场景描述句子（AI 基于图片内容生成）",
+      "Word 包含在场景句子中的位置信息，用于 TTS 朗读时高亮显示"
+    ]
+  },
+  "photos": [
+    {
+      "id": "photo-001",
+      "imageUrl": "/sample-images/coffee-shop.jpg",
+      "thumbnailUrl": "/sample-images/coffee-shop-thumb.jpg",
+      "capturedAt": "2025-01-26T10:30:00Z",
+      "location": "咖啡厅",
+      "status": "completed",
+      "recognizedWords": [
+        {
+          "id": "word-001",
+          "word": "laptop",
+          "phonetic": "/ˈlæptɒp/",
+          "definition": "笔记本电脑",
+          "pronunciationUrl": "/audio/laptop.mp3",
+          "isSaved": false,
+          "positionInSentence": 3
+        },
+        {
+          "id": "word-002",
+          "word": "coffee",
+          "phonetic": "/ˈkɒfi/",
+          "definition": "咖啡",
+          "pronunciationUrl": "/audio/coffee.mp3",
+          "isSaved": true,
+          "positionInSentence": 6
+        },
+        {
+          "id": "word-003",
+          "word": "cup",
+          "phonetic": "/kʌp/",
+          "definition": "杯子",
+          "pronunciationUrl": "/audio/cup.mp3",
+          "isSaved": false,
+          "positionInSentence": 7
+        },
+        {
+          "id": "word-004",
+          "word": "menu",
+          "phonetic": "/ˈmenjuː/",
+          "definition": "菜单",
+          "pronunciationUrl": "/audio/menu.mp3",
+          "isSaved": false,
+          "positionInSentence": -1
+        }
+      ],
+      "sceneDescription": "A person is working on their laptop while enjoying a fresh cup of coffee.",
+      "sceneTranslation": "一个人正在用笔记本电脑工作，同时享受着一杯新鲜冲泡的咖啡。"
+    },
+    {
+      "id": "photo-002",
+      "imageUrl": "/sample-images/office.jpg",
+      "thumbnailUrl": "/sample-images/office-thumb.jpg",
+      "capturedAt": "2025-01-26T14:15:00Z",
+      "location": "办公室",
+      "status": "completed",
+      "recognizedWords": [
+        {
+          "id": "word-005",
+          "word": "computer",
+          "phonetic": "/kəmˈpjuːtə/",
+          "definition": "电脑",
+          "pronunciationUrl": "/audio/computer.mp3",
+          "isSaved": false,
+          "positionInSentence": 4
+        },
+        {
+          "id": "word-006",
+          "word": "keyboard",
+          "phonetic": "/ˈkiːbɔːd/",
+          "definition": "键盘",
+          "pronunciationUrl": "/audio/keyboard.mp3",
+          "isSaved": false,
+          "positionInSentence": 6
+        },
+        {
+          "id": "word-007",
+          "word": "monitor",
+          "phonetic": "/ˈmɒnɪtə/",
+          "definition": "显示器",
+          "pronunciationUrl": "/audio/monitor.mp3",
+          "isSaved": true,
+          "positionInSentence": 7
+        },
+        {
+          "id": "word-008",
+          "word": "notebook",
+          "phonetic": "/ˈnəʊtbʊk/",
+          "definition": "笔记本",
+          "pronunciationUrl": "/audio/notebook.mp3",
+          "isSaved": false,
+          "positionInSentence": -1
+        }
+      ],
+      "sceneDescription": "The computer setup includes a keyboard and monitor for productive work.",
+      "sceneTranslation": "这台电脑配置包括键盘和显示器，用于高效工作。"
+    },
+    {
+      "id": "photo-003",
+      "imageUrl": "/sample-images/park.jpg",
+      "thumbnailUrl": "/sample-images/park-thumb.jpg",
+      "capturedAt": "2025-01-25T18:45:00Z",
+      "location": "公园",
+      "status": "completed",
+      "recognizedWords": [
+        {
+          "id": "word-009",
+          "word": "tree",
+          "phonetic": "/triː/",
+          "definition": "树",
+          "pronunciationUrl": "/audio/tree.mp3",
+          "isSaved": false,
+          "positionInSentence": 2
+        },
+        {
+          "id": "word-010",
+          "word": "bench",
+          "phonetic": "/bentʃ/",
+          "definition": "长椅",
+          "pronunciationUrl": "/audio/bench.mp3",
+          "isSaved": false,
+          "positionInSentence": 4
+        },
+        {
+          "id": "word-011",
+          "word": "bird",
+          "phonetic": "/bɜːd/",
+          "definition": "鸟",
+          "pronunciationUrl": "/audio/bird.mp3",
+          "isSaved": true,
+          "positionInSentence": 6
+        },
+        {
+          "id": "word-012",
+          "word": "fountain",
+          "phonetic": "/ˈfaʊntən/",
+          "definition": "喷泉",
+          "pronunciationUrl": "/audio/fountain.mp3",
+          "isSaved": false,
+          "positionInSentence": -1
+        }
+      ],
+      "sceneDescription": "A tall tree stands next to the bench where a bird is resting.",
+      "sceneTranslation": "一棵高树立在长椅旁边，一只鸟正在上面休息。"
+    },
+    {
+      "id": "photo-004",
+      "imageUrl": "/sample-images/kitchen.jpg",
+      "thumbnailUrl": "/sample-images/kitchen-thumb.jpg",
+      "capturedAt": "2025-01-24T08:20:00Z",
+      "location": "厨房",
+      "status": "completed",
+      "recognizedWords": [
+        {
+          "id": "word-013",
+          "word": "refrigerator",
+          "phonetic": "/rɪˈfrɪdʒəreɪtə/",
+          "definition": "冰箱",
+          "pronunciationUrl": "/audio/refrigerator.mp3",
+          "isSaved": false,
+          "positionInSentence": 3
+        },
+        {
+          "id": "word-014",
+          "word": "stove",
+          "phonetic": "/stəʊv/",
+          "definition": "炉灶",
+          "pronunciationUrl": "/audio/stove.mp3",
+          "isSaved": false,
+          "positionInSentence": 5
+        },
+        {
+          "id": "word-015",
+          "word": "cabinet",
+          "phonetic": "/ˈkæbɪnɪt/",
+          "definition": "橱柜",
+          "pronunciationUrl": "/audio/cabinet.mp3",
+          "isSaved": true,
+          "positionInSentence": -1
+        },
+        {
+          "id": "word-016",
+          "word": "sink",
+          "phonetic": "/sɪŋk/",
+          "definition": "水槽",
+          "pronunciationUrl": "/audio/sink.mp3",
+          "isSaved": false,
+          "positionInSentence": -1
+        }
+      ],
+      "sceneDescription": "The modern kitchen has a stainless steel refrigerator beside the stove.",
+      "sceneTranslation": "这个现代化厨房的炉灶旁边有一个不锈钢冰箱。"
+    },
+    {
+      "id": "photo-005",
+      "imageUrl": "/sample-images/library.jpg",
+      "thumbnailUrl": "/sample-images/library-thumb.jpg",
+      "capturedAt": "2025-01-23T16:50:00Z",
+      "location": "图书馆",
+      "status": "completed",
+      "recognizedWords": [
+        {
+          "id": "word-017",
+          "word": "bookshelf",
+          "phonetic": "/ˈbʊkʃelf/",
+          "definition": "书架",
+          "pronunciationUrl": "/audio/bookshelf.mp3",
+          "isSaved": false,
+          "positionInSentence": 3
+        },
+        {
+          "id": "word-018",
+          "word": "lamp",
+          "phonetic": "/læmp/",
+          "definition": "台灯",
+          "pronunciationUrl": "/audio/lamp.mp3",
+          "isSaved": false,
+          "positionInSentence": 6
+        },
+        {
+          "id": "word-019",
+          "word": "chair",
+          "phonetic": "/tʃeə/",
+          "definition": "椅子",
+          "pronunciationUrl": "/audio/chair.mp3",
+          "isSaved": true,
+          "positionInSentence": -1
+        },
+        {
+          "id": "word-020",
+          "word": "desk",
+          "phonetic": "/desk/",
+          "definition": "书桌",
+          "pronunciationUrl": "/audio/desk.mp3",
+          "isSaved": false,
+          "positionInSentence": -1
+        }
+      ],
+      "sceneDescription": "The bookshelf holds many books beside a comfortable chair with a reading lamp.",
+      "sceneTranslation": "书架上放了很多书，旁边是一把配有阅读灯的舒适椅子。"
+    },
+    {
+      "id": "photo-006",
+      "imageUrl": "/sample-images/street.jpg",
+      "thumbnailUrl": "/sample-images/street-thumb.jpg",
+      "capturedAt": "2025-01-22T12:30:00Z",
+      "location": "街道",
+      "status": "processing",
+      "recognizedWords": [],
+      "sceneDescription": "",
+      "sceneTranslation": ""
+    }
+  ]
+}

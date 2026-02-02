@@ -1,0 +1,341 @@
+{
+  "_meta": {
+    "models": {
+      "dailyTask": "每日练习任务，包含需要复习的单词列表和练习类型安排。",
+      "practiceQuestion": "练习题目，包括填空、中译英选择、听写默写三种类型。",
+      "practiceResult": "练习结果总结，记录得分、正确率、用时和错题信息。",
+      "reviewSchedule": "复习日程，显示单词的复习计划和下次复习时间。",
+      "progressStats": "学习进度统计，包括学习天数、掌握程度趋势等指标。"
+    },
+    "relationships": [
+      "每个 DailyTask 包含多个 Word（需要复习的单词）",
+      "每个 PracticeResult 对应一次练习会话，包含多个 PracticeQuestion",
+      "错题从 PracticeResult 中提取，加入错题复习队列",
+      "ReviewSchedule 跟踪每个 Word 的下次复习时间（基于间隔重复算法）",
+      "ProgressStats 汇总所有练习和复习的数据"
+    ]
+  },
+  "dailyTask": {
+    "id": "task-2025-01-26",
+    "date": "2025-01-26",
+    "wordsCount": 5,
+    "estimatedMinutes": 3,
+    "practiceTypes": ["fill-blank", "multiple-choice", "dictation"],
+    "words": [
+      {
+        "id": "word-001",
+        "word": "laptop",
+        "phonetic": "/ˈlæptɒp/",
+        "definition": "笔记本电脑",
+        "masteryLevel": "familiar",
+        "reviewCount": 3,
+        "nextReviewDate": "2025-01-26T10:00:00Z",
+        "examples": [
+          {
+            "sentence": "I'm working on my laptop at the coffee shop.",
+            "translation": "我正在咖啡厅用笔记本电脑工作。",
+            "sourcePhoto": "photo-001"
+          }
+        ]
+      },
+      {
+        "id": "word-007",
+        "word": "monitor",
+        "phonetic": "/ˈmɒnɪtə/",
+        "definition": "显示器",
+        "masteryLevel": "familiar",
+        "reviewCount": 4,
+        "nextReviewDate": "2025-01-26T10:00:00Z",
+        "examples": [
+          {
+            "sentence": "This monitor has excellent color accuracy.",
+            "translation": "这个显示器的色彩还原度很高。",
+            "sourcePhoto": "photo-002"
+          }
+        ]
+      },
+      {
+        "id": "word-011",
+        "word": "bird",
+        "phonetic": "/bɜːd/",
+        "definition": "鸟",
+        "masteryLevel": "mastered",
+        "reviewCount": 6,
+        "nextReviewDate": "2025-01-27T10:00:00Z",
+        "examples": [
+          {
+            "sentence": "A bird is resting on the branch.",
+            "translation": "一只鸟正在树枝上休息。",
+            "sourcePhoto": "photo-003"
+          }
+        ]
+      },
+      {
+        "id": "word-014",
+        "word": "stove",
+        "phonetic": "/stəʊv/",
+        "definition": "炉灶",
+        "masteryLevel": "learning",
+        "reviewCount": 1,
+        "nextReviewDate": "2025-01-26T10:00:00Z",
+        "examples": [
+          {
+            "sentence": "She cooked dinner on the gas stove.",
+            "translation": "她在煤气灶上做了晚餐。",
+            "sourcePhoto": "photo-004"
+          }
+        ]
+      },
+      {
+        "id": "word-020",
+        "word": "desk",
+        "phonetic": "/desk/",
+        "definition": "书桌",
+        "masteryLevel": "mastered",
+        "reviewCount": 4,
+        "nextReviewDate": "2025-01-27T10:00:00Z",
+        "examples": [
+          {
+            "sentence": "My desk is always messy.",
+            "translation": "我的书桌总是很乱。",
+            "sourcePhoto": "photo-005"
+          }
+        ]
+      }
+    ]
+  },
+  "practiceQuestions": [
+    {
+      "id": "q-001",
+      "type": "fill-blank",
+      "question": "I'm working on my _____ at the coffee shop.",
+      "wordId": "word-001",
+      "correctAnswer": "laptop",
+      "hint": "笔记本电脑",
+      "options": []
+    },
+    {
+      "id": "q-002",
+      "type": "multiple-choice",
+      "question": "选择正确的单词：笔记本电脑",
+      "wordId": "word-007",
+      "correctAnswer": "monitor",
+      "hint": "显示器",
+      "options": [
+        { "id": "a", "text": "keyboard", "isCorrect": false },
+        { "id": "b", "text": "monitor", "isCorrect": true },
+        { "id": "c", "text": "mouse", "isCorrect": false },
+        { "id": "d", "text": "speaker", "isCorrect": false }
+      ]
+    },
+    {
+      "id": "q-003",
+      "type": "dictation",
+      "question": "听音拼写单词",
+      "wordId": "word-011",
+      "correctAnswer": "bird",
+      "hint": "鸟",
+      "phonetic": "/bɜːd/",
+      "audioUrl": "/audio/bird.mp3",
+      "options": []
+    },
+    {
+      "id": "q-004",
+      "type": "fill-blank",
+      "question": "She cooked dinner on the gas _____.",
+      "wordId": "word-014",
+      "correctAnswer": "stove",
+      "hint": "炉灶",
+      "options": []
+    },
+    {
+      "id": "q-005",
+      "type": "multiple-choice",
+      "question": "选择正确的单词：书桌",
+      "wordId": "word-020",
+      "correctAnswer": "desk",
+      "hint": "书桌",
+      "options": [
+        { "id": "a", "text": "chair", "isCorrect": false },
+        { "id": "b", "text": "desk", "isCorrect": true },
+        { "id": "c", "text": "table", "isCorrect": false },
+        { "id": "d", "text": "shelf", "isCorrect": false }
+      ]
+    }
+  ],
+  "practiceResult": {
+    "id": "result-2025-01-26-001",
+    "taskId": "task-2025-01-26",
+    "completedAt": "2025-01-26T10:15:00Z",
+    "totalQuestions": 5,
+    "correctAnswers": 4,
+    "score": 80,
+    "accuracy": 0.8,
+    "durationSeconds": 180,
+    "wrongAnswers": [
+      {
+        "questionId": "q-003",
+        "userAnswer": "brid",
+        "correctAnswer": "bird",
+        "wordId": "word-011"
+      }
+    ]
+  },
+  "wrongAnswersQueue": [
+    {
+      "questionId": "q-003",
+      "wordId": "word-011",
+      "word": "bird",
+      "phonetic": "/bɜːd/",
+      "definition": "鸟",
+      "userWrongAnswer": "brid",
+      "addedAt": "2025-01-26T10:15:00Z",
+      "reviewCount": 0
+    }
+  ],
+  "reviewSchedule": [
+    {
+      "wordId": "word-001",
+      "word": "laptop",
+      "nextReviewDate": "2025-01-26T10:00:00Z",
+      "intervalDays": 1,
+      "easeFactor": 2.5,
+      "reviewCount": 3
+    },
+    {
+      "wordId": "word-007",
+      "word": "monitor",
+      "nextReviewDate": "2025-01-26T10:00:00Z",
+      "intervalDays": 1,
+      "easeFactor": 2.3,
+      "reviewCount": 4
+    },
+    {
+      "wordId": "word-011",
+      "word": "bird",
+      "nextReviewDate": "2025-01-26T14:00:00Z",
+      "intervalDays": 0,
+      "easeFactor": 2.0,
+      "reviewCount": 6
+    },
+    {
+      "wordId": "word-014",
+      "word": "stove",
+      "nextReviewDate": "2025-01-26T10:00:00Z",
+      "intervalDays": 0,
+      "easeFactor": 2.1,
+      "reviewCount": 1
+    },
+    {
+      "wordId": "word-020",
+      "word": "desk",
+      "nextReviewDate": "2025-01-27T10:00:00Z",
+      "intervalDays": 3,
+      "easeFactor": 2.7,
+      "reviewCount": 4
+    }
+  ],
+  "progressStats": {
+    "totalWords": 15,
+    "masteredWords": 3,
+    "familiarWords": 6,
+    "learningWords": 6,
+    "totalPracticeSessions": 28,
+    "totalReviews": 47,
+    "averageAccuracy": 0.85,
+    "studyDays": 12,
+    "currentStreak": 5,
+    "longestStreak": 7,
+    "lastPracticeDate": "2025-01-26T10:15:00Z",
+    "weeklyAccuracy": [
+      { "date": "2025-01-20", "accuracy": 0.75 },
+      { "date": "2025-01-21", "accuracy": 0.8 },
+      { "date": "2025-01-22", "accuracy": 0.85 },
+      { "date": "2025-01-23", "accuracy": 0.82 },
+      { "date": "2025-01-24", "accuracy": 0.88 },
+      { "date": "2025-01-25", "accuracy": 0.9 },
+      { "date": "2025-01-26", "accuracy": 0.8 }
+    ]
+  },
+  "sampleQuestions": [
+    {
+      "id": "q-001",
+      "type": "fill-blank",
+      "question": "I'm working on my _____ at the coffee shop.",
+      "wordId": "word-001",
+      "correctAnswer": "laptop",
+      "hint": "笔记本电脑",
+      "options": []
+    },
+    {
+      "id": "q-002",
+      "type": "multiple-choice",
+      "question": "What does 'monitor' mean?",
+      "wordId": "word-007",
+      "correctAnswer": "显示器",
+      "hint": "显示器 (Computer display screen)",
+      "options": [
+        { "id": "opt-1", "text": "显示器", "isCorrect": true },
+        { "id": "opt-2", "text": "键盘", "isCorrect": false },
+        { "id": "opt-3", "text": "鼠标", "isCorrect": false },
+        { "id": "opt-4", "text": "打印机", "isCorrect": false }
+      ]
+    },
+    {
+      "id": "q-003",
+      "type": "dictation",
+      "question": "Type the word you hear: /ˈlæptɒp/",
+      "wordId": "word-001",
+      "correctAnswer": "laptop",
+      "hint": "笔记本电脑",
+      "options": [],
+      "phonetic": "/ˈlæptɒp/",
+      "audioUrl": "/audio/laptop.mp3"
+    },
+    {
+      "id": "q-004",
+      "type": "fill-blank",
+      "question": "Please _____ the report by tomorrow.",
+      "wordId": "word-015",
+      "correctAnswer": "submit",
+      "hint": "提交",
+      "options": []
+    },
+    {
+      "id": "q-005",
+      "type": "multiple-choice",
+      "question": "Choose the correct meaning: 'keyboard'",
+      "wordId": "word-008",
+      "correctAnswer": "键盘",
+      "hint": "键盘 (Typing device)",
+      "options": [
+        { "id": "opt-1", "text": "键盘", "isCorrect": true },
+        { "id": "opt-2", "text": "鼠标", "isCorrect": false },
+        { "id": "opt-3", "text": "屏幕", "isCorrect": false },
+        { "id": "opt-4", "text": "主机", "isCorrect": false }
+      ]
+    }
+  ],
+  "wrongAnswersQueue": [
+    {
+      "questionId": "wrong-001",
+      "wordId": "word-012",
+      "word": "database",
+      "phonetic": "/ˈdeɪtəbeɪs/",
+      "definition": "数据库",
+      "userWrongAnswer": "databace",
+      "addedAt": "2025-01-25T14:30:00Z",
+      "reviewCount": 2
+    },
+    {
+      "questionId": "wrong-002",
+      "wordId": "word-020",
+      "word": "algorithm",
+      "phonetic": "/ˈælɡərɪðəm/",
+      "definition": "算法",
+      "userWrongAnswer": "algoritm",
+      "addedAt": "2025-01-26T09:15:00Z",
+      "reviewCount": 3
+    }
+  ]
+}
