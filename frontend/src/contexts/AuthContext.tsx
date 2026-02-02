@@ -63,15 +63,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const login = async (emailOrPhone: string, password: string, keepLoggedIn = false) => {
+    console.log('🔐 [Auth] Login attempt:', { emailOrPhone, keepLoggedIn });
+
     const response = await authApi.login(emailOrPhone, password, keepLoggedIn);
 
+    console.log('📥 [Auth] Login response:', response);
+
     if (!response.success || !response.data) {
-      throw new Error((response as any).error || 'Login failed');
+      const errorMsg = (response as any).error || 'Login failed';
+      console.error('❌ [Auth] Login failed:', errorMsg);
+      throw new Error(errorMsg);
     }
 
     // Type assertion to handle backend response format
     const data = response.data as any;
     const { access_token, user: userData } = data;
+
+    console.log('✅ [Auth] Login successful, user:', userData?.username || userData?.nickname);
 
     // Store tokens (backend uses access_token, not refreshToken)
     localStorage.setItem('access_token', access_token);

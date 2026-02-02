@@ -221,11 +221,17 @@ export const authApi = {
    * POST /auth/login
    */
   login: async (emailOrPhone: string, password: string, keepLoggedIn: boolean) => {
-    return api.post<AuthTokens & { user: import('@/types').User }>('/auth/login', {
+    console.log('🔐 [API] Login request:', { emailOrPhone, keepLoggedIn });
+
+    const result = await api.post<AuthTokens & { user: import('@/types').User }>('/auth/login', {
       emailOrPhone,
       password,
       keepLoggedIn,
     });
+
+    console.log('📥 [API] Login response:', result);
+
+    return result;
   },
 
   /**
