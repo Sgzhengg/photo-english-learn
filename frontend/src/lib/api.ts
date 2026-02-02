@@ -101,11 +101,9 @@ class ApiClient {
     const json = await response.json().catch(() => ({}));
 
     if (!response.ok) {
-      // Debug: Log detailed error for /words/add endpoint
-      if (response.url.includes('/words/add')) {
-        console.error('❌ [API] Response status:', response.status, response.statusText);
-        console.error('❌ [API] Response body:', json);
-      }
+      // Debug: Log detailed error for all failed requests
+      console.error(`❌ [API] ${response.status} ${response.statusText} for ${response.url}`);
+      console.error('❌ [API] Response body:', JSON.stringify(json, null, 2));
 
       return {
         success: false,
@@ -223,13 +221,21 @@ export const authApi = {
   login: async (emailOrPhone: string, password: string, keepLoggedIn: boolean) => {
     console.log('🔐 [API] Login request:', { emailOrPhone, keepLoggedIn });
 
+    // Backend expects 'username' field, not 'emailOrPhone'
     const result = await api.post<AuthTokens & { user: import('@/types').User }>('/auth/login', {
-      emailOrPhone,
+      username: emailOrPhone,  // Changed from emailOrPhone to username
       password,
       keepLoggedIn,
     });
 
-    console.log('📥 [API] Login response:', result);
+    // Log detailed error information
+    if (!result.success) {
+      console.error('❌ [API] Login failed!');
+      console.error('❌ [API] Error details:', result.error);
+      console.error('❌ [API] Full response:', JSON.stringify(result, null, 2));
+    } else {
+      console.log('✅ [API] Login successful!');
+    }
 
     return result;
   },
@@ -243,7 +249,12 @@ export const authApi = {
     verificationCode: string;
     password: string;
   }) => {
-    return api.post<AuthTokens & { user: import('@/types').User }>('/auth/register', data);
+    // Backend expects 'username' field, not 'emailOrPhone'
+    return api.post<AuthTokens & { user: import('@/types').User }>('/auth/register', {
+      username: data.emailOrPhone,  // Changed from emailOrPhone to username
+      verificationCode: data.verificationCode,
+      password: data.password,
+    });
   },
 
   /**
@@ -389,6 +400,7 @@ export const vocabularyApi = {
   /**
    * Get user's vocabulary library
    * GET /words/list (routes to word-service /list)
+   * Backend returns List[UserWordResponse] directly
    */
   getWords: (_params?: {
     search?: string;
@@ -397,7 +409,7 @@ export const vocabularyApi = {
     page?: number;
     limit?: number;
   }) =>
-    api.get<{ words: import('@/types').Word[]; total: number }>('/words/list'),
+    api.get<import('@/types/api').UserWordResponse[]>('/words/list'),
 
   /**
    * Add word to vocabulary

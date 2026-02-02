@@ -67,10 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const response = await authApi.login(emailOrPhone, password, keepLoggedIn);
 
-    console.log('📥 [Auth] Login response:', response);
+    console.log('📥 [Auth] Login response received');
+    console.log('   - success:', response.success);
+    console.log('   - has data:', !!response.data);
+    console.log('   - error:', response.error);
+    console.log('   - full response:', JSON.stringify(response, null, 2));
 
     if (!response.success || !response.data) {
-      const errorMsg = (response as any).error || 'Login failed';
+      const errorMsg = Array.isArray(response.error)
+        ? response.error.join(', ')
+        : (response as any).error || 'Login failed';
+
       console.error('❌ [Auth] Login failed:', errorMsg);
       throw new Error(errorMsg);
     }

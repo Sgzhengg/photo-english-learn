@@ -40,7 +40,7 @@ export function VocabularyLibraryPage() {
         console.log('📥 [Vocabulary Library] Words API result:', wordsResult);
 
         if (wordsResult.success && wordsResult.data) {
-          const adaptedWords = adaptUserWordsToWords(wordsResult.data.words || []);
+          const adaptedWords = adaptUserWordsToWords(wordsResult.data || []);
           console.log('✅ [Vocabulary Library] Loaded words:', adaptedWords.length, 'words');
           console.log('📝 [Vocabulary Library] Words data:', adaptedWords);
           setWords(adaptedWords);

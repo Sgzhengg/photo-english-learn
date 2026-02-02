@@ -21,12 +21,9 @@ export function LoginPage() {
     try {
       await login(data.emailOrPhone, data.password, data.keepLoggedIn);
 
-      // Refresh user data from server to get latest state
-      await refreshUser();
-
-      // Check navigation logic will be handled by AuthContext's user state
-      // For now, navigate to onboarding first (it will redirect if already completed)
-      navigate('/onboarding');
+      // Login already returns user data, no need to call refreshUser
+      // Navigate directly to the app
+      navigate('/app/photo-capture');
     } catch (err) {
       setError(err instanceof Error ? err.message : '登录失败，请检查您的账号和密码');
     } finally {

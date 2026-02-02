@@ -109,7 +109,7 @@ export function PhotoCapturePage() {
       // Step 2: Add the word to vocabulary using the real word_id
       console.log('💾 [Step 2] Adding word to vocabulary, word_id:', realWordId);
       const addResult = await vocabularyApi.addWord(realWordId);
-      console.log('📥 Add result:', addResult);
+      console.log('📥 [Word Save] Add result:', JSON.stringify(addResult, null, 2));
 
       if (addResult.success) {
         // Update local state
