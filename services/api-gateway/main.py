@@ -13,6 +13,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 import httpx
 import os
+import json
 from typing import Dict, Tuple
 import logging
 
@@ -172,9 +173,21 @@ async def proxy_request(path: str, request: Request):
                 params=request.query_params
             )
 
+            # 尝试解析 JSON 响应
+            try:
+                response_data = response.json()
+            except (json.JSONDecodeError, ValueError):
+                # 如果响应不是有效的 JSON，返回错误响应
+                logger.warning(f"Non-JSON response from {service_name}: {response.text[:200]}")
+                response_data = {
+                    "code": -1,
+                    "message": f"{service_name} 服务返回了无效的响应格式",
+                    "data": None
+                }
+
             # 返回响应
             return JSONResponse(
-                content=response.json(),
+                content=response_data,
                 status_code=response.status_code,
                 headers=dict(response.headers)
             )
