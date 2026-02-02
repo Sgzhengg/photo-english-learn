@@ -108,7 +108,11 @@ export function PhotoCapturePage() {
 
       // Step 2: Add the word to vocabulary using the real word_id
       // Pass vision-service translation data to avoid re-calling translation API
-      console.log('💾 [Step 2] Adding word to vocabulary with vision-service data');
+      console.log('💾 [Step 2] Vision-service data:', {
+        word: word.word,
+        definition: word.definition,
+        phonetic: word.phonetic,
+      });
       const addResult = await vocabularyApi.addWord(
         realWordId,
         undefined, // sceneId

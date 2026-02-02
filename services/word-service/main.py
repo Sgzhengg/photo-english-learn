@@ -297,30 +297,31 @@ async def add_word(
         )
 
     # 如果提供了单词详情，更新数据库中的单词记录（使用 vision-service 的识别结果）
+    # 这避免了重复调用翻译 API，并使用 Qwen 2.5 VL 的高质量翻译
     if word_data.chinese_meaning or word_data.phonetic_us:
         try:
             word_result = await db.execute(select(Word).where(Word.word_id == word_data.word_id))
             word = word_result.scalar_one_or_none()
 
             if word:
-                # 更新现有单词的详情
+                # 无条件更新：Qwen 2.5 VL 的翻译质量比免费 API 更好
                 update_data = {}
-                if word_data.chinese_meaning and not word.chinese_meaning:
+                if word_data.chinese_meaning:
                     update_data['chinese_meaning'] = word_data.chinese_meaning
-                if word_data.phonetic_us and not word.phonetic_us:
+                if word_data.phonetic_us:
                     update_data['phonetic_us'] = word_data.phonetic_us
-                if word_data.phonetic_uk and not word.phonetic_uk:
+                if word_data.phonetic_uk:
                     update_data['phonetic_uk'] = word_data.phonetic_uk
-                if word_data.example_sentence and not word.example_sentence:
+                if word_data.example_sentence:
                     update_data['example_sentence'] = word_data.example_sentence
-                if word_data.example_translation and not word.example_translation:
+                if word_data.example_translation:
                     update_data['example_translation'] = word_data.example_translation
 
                 if update_data:
                     for key, value in update_data.items():
                         setattr(word, key, value)
                     await db.commit()
-                    logger.info(f"✅ Updated word {word.word_id} with vision-service data: {list(update_data.keys())}")
+                    logger.info(f"✅ Updated word {word.word_id} with Qwen 2.5 VL data: {list(update_data.keys())}")
         except Exception as e:
             logger.warning(f"Failed to update word details (non-critical): {e}")
 
