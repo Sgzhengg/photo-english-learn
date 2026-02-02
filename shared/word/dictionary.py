@@ -29,12 +29,17 @@ class DictionaryAPI:
             - example_sentence: 例句
             - example_translation: 例句翻译
         """
-        # 先尝试从有道 API 获取
+        # 1. 先尝试从有道 API 获取（最完整）
         word_data = await self._fetch_from_youdao(english_word)
         if word_data:
             return word_data
 
-        # 备用：使用本地数据或 Mock
+        # 2. 备用：使用免费翻译 API 获取中文释义
+        word_data = await self._fetch_from_free_translation(english_word)
+        if word_data:
+            return word_data
+
+        # 3. 最后：使用本地数据或 Mock
         return self._mock_data(english_word)
 
     async def _fetch_from_youdao(self, english_word: str) -> Optional[Dict[str, Any]]:
@@ -58,6 +63,35 @@ class DictionaryAPI:
                     return self._parse_youdao_response(data)
         except Exception as e:
             print(f"Youdao API error: {e}")
+
+        return None
+
+    async def _fetch_from_free_translation(self, english_word: str) -> Optional[Dict[str, Any]]:
+        """从免费翻译API获取单词信息（MyMemory API，无需密钥）"""
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                # MyMemory Translation API
+                url = "https://api.mymemory.translated.net/get"
+                params = {
+                    "q": english_word,
+                    "langpair": "en|zh-CN"
+                }
+                response = await client.get(url, params=params)
+                data = response.json()
+
+                if data.get("responseStatus") == 200:
+                    translated_text = data.get("responseData", {}).get("translatedText", "")
+                    if translated_text and translated_text != english_word:
+                        return {
+                            "english_word": english_word,
+                            "chinese_meaning": translated_text,
+                            "phonetic_us": "",
+                            "phonetic_uk": "",
+                            "example_sentence": "",
+                            "example_translation": ""
+                        }
+        except Exception as e:
+            print(f"Free translation API error: {e}")
 
         return None
 
@@ -92,8 +126,12 @@ class DictionaryAPI:
 
     def _mock_data(self, english_word: str) -> Dict[str, Any]:
         """生成 Mock 数据"""
-        # 这里可以扩展一个简单的本地词典
-        # 或者返回基本数据让用户手动补充
+        # 先尝试从本地词典获取
+        local_data = get_local_dict(english_word)
+        if local_data:
+            return local_data
+
+        # 如果本地词典也没有，返回基本数据让用户手动补充
         return {
             "english_word": english_word,
             "chinese_meaning": "请补充释义",
