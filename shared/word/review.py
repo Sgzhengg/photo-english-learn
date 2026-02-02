@@ -10,8 +10,8 @@ from shared.database.models import ReviewRecord, Word
 
 
 def utc_now():
-    """获取当前 UTC 时间"""
-    return datetime.now(timezone.utc)
+    """获取当前时间（不带时区，匹配数据库 TIMESTAMP WITHOUT TIME ZONE）"""
+    return datetime.now()
 
 
 # 艾宾浩斯遗忘曲线间隔（分钟）
