@@ -252,7 +252,7 @@ async def get_word_list(
 @app.post("/add", response_model=UserWordResponse, tags=["Words"])
 async def add_word(
     word_data: UserWordCreate,
-    current_user: Annotated[User, Depends(get_current_user)],
+    current_user: Annotated[Optional[User], Depends(get_current_user_optional)],
     db: AsyncSession = Depends(get_async_db)
 ):
     """
@@ -261,7 +261,16 @@ async def add_word(
     - **word_id**: 单词 ID
     - **scene_id**: 来源场景 ID（可选）
     - **tag_id**: 标签 ID（默认为 1 - 生词）
+
+    支持匿名用户（通过 X-Anonymous-User-ID 头）
     """
+    # 检查用户是否已认证
+    if not current_user:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="用户未认证，请先登录或提供匿名用户 ID"
+        )
+
     # 检查是否已存在
     result = await db.execute(
         select(UserWord).where(
