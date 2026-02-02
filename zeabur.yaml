@@ -1,0 +1,118 @@
+# PhotoEnglish - Zeabur Deployment Configuration
+# 前后端一体化部署配置
+
+# 前端构建服务（在部署前运行）
+services:
+  # ============================================
+  # 前端 - 构建阶段（Build Service）
+  # ============================================
+  - name: frontend-build
+    type: Prebuilt
+    description: "Build frontend static files"
+    buildCommand: |
+      cd frontend
+      npm install
+      npm run build
+    outputPath: frontend/dist
+    # 这个服务只用于构建，不会被部署
+
+  # ============================================
+  # API Gateway (主服务 + 托管前端)
+  # ============================================
+  - name: api-gateway
+    type: Worker
+    description: "API Gateway + Frontend Static Files"
+    env:
+      - PORT=8080
+      - AUTH_SERVICE_URL=http://auth-service.zeabur.internal:8001
+      - VISION_SERVICE_URL=http://vision-service.zeabur.internal:8003
+      - WORD_SERVICE_URL=http://word-service.zeabur.internal:8004
+      - PRACTICE_SERVICE_URL=http://practice-service.zeabur.internal:8005
+      - TTS_SERVICE_URL=http://tts-service.zeabur.internal:8006
+      - ASR_SERVICE_URL=http://asr-service.zeabur.internal:8080
+      - SKIP_AUTH=true
+    buildCommand: |
+      pip install -r requirements.txt
+    runCommand: uvicorn services.api-gateway.main:app --host 0.0.0.0 --port $PORT
+    ports:
+      - port: 8080
+        public: true
+    deployments:
+      - domain:
+          - name: main
+            value: photo-english-learn
+    dependsOn:
+      - frontend-build  # 依赖前端构建完成
+
+  # ============================================
+  # 后端微服务
+  # ============================================
+  - name: auth-service
+    type: Worker
+    description: "Authentication Service"
+    buildCommand: |
+      pip install -r requirements.txt
+    runCommand: uvicorn services.auth_service.main:app --host 0.0.0.0 --port 8001
+    ports:
+      - port: 8001
+        public: false
+
+  - name: vision-service
+    type: Worker
+    description: "Vision/AI Service"
+    buildCommand: |
+      pip install -r requirements.txt
+    runCommand: uvicorn services.vision-service.main:app --host 0.0.0.0 --port 8003
+    ports:
+      - port: 8003
+        public: false
+    env:
+      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+
+  - name: word-service
+    type: Worker
+    description: "Word/Vocabulary Service"
+    buildCommand: |
+      pip install -r requirements.txt
+    runCommand: uvicorn services.word-service.main:app --host 0.0.0.0 --port 8004
+    ports:
+      - port: 8004
+        public: false
+
+  - name: practice-service
+    type: Worker
+    description: "Practice/Review Service"
+    buildCommand: |
+      pip install -r requirements.txt
+    runCommand: uvicorn services.practice-service.main:app --host 0.0.0.0 --port 8005
+    ports:
+      - port: 8005
+        public: false
+
+  - name: tts-service
+    type: Worker
+    description: "Text-to-Speech Service"
+    buildCommand: |
+      pip install -r requirements.txt
+    runCommand: uvicorn services.tts-service.main:app --host 0.0.0.0 --port 8006
+    ports:
+      - port: 8006
+        public: false
+
+  - name: asr-service
+    type: Worker
+    description: "ASR/Speech Recognition Service"
+    buildCommand: |
+      pip install -r requirements.txt
+    runCommand: uvicorn services.asr-service.main:app --host 0.0.0.0 --port 8080
+    ports:
+      - port: 8080
+        public: false
+
+# ============================================
+# 全局环境变量
+# ============================================
+env:
+  - SKIP_AUTH=true
+  - DATABASE_URL=${DATABASE_URL}
+  - REDIS_URL=${REDIS_URL}

@@ -11,6 +11,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from fastapi import FastAPI, Request, Response, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
+from fastapi.staticfiles import StaticFiles
 import httpx
 import os
 import json
@@ -238,6 +239,17 @@ async def global_exception_handler(request: Request, exc: Exception):
             "data": {"detail": str(exc)}
         }
     )
+
+
+# Mount static files for frontend (SPA support)
+frontend_dist_path = Path(__file__).parent.parent / "frontend" / "dist"
+if frontend_dist_path.exists():
+    app.mount("/assets", StaticFiles(directory=str(frontend_dist_path / "assets")), name="assets")
+    app.mount("/", StaticFiles(directory=str(frontend_dist_path), html=True), name="frontend")
+    logger.info(f"Frontend static files mounted from: {frontend_dist_path}")
+else:
+    logger.warning(f"Frontend dist directory not found at: {frontend_dist_path}")
+    logger.info("API Gateway running in API-only mode (no frontend)")
 
 
 if __name__ == "__main__":
