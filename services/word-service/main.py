@@ -299,9 +299,14 @@ async def add_word(
     await db.commit()
     await db.refresh(new_user_word)
 
-    # 创建复习记录
-    from shared.word.review import create_review_record
-    await create_review_record(db, current_user.user_id, word_data.word_id)
+    # 创建复习记录（可选，失败不影响主要功能）
+    try:
+        from shared.word.review import create_review_record
+        await create_review_record(db, current_user.user_id, word_data.word_id)
+        logger.info(f"Created review record for user {current_user.user_id}, word {word_data.word_id}")
+    except Exception as e:
+        logger.warning(f"Failed to create review record (non-critical): {e}")
+        # 继续执行，复习记录创建失败不影响主要功能
 
     # 加载关联数据
     await db.refresh(new_user_word, ["word", "tag"])
