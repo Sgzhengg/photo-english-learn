@@ -10,6 +10,22 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 console.log('🔗 API_BASE_URL:', API_BASE_URL);
 
 // -----------------------------------------------------------------------------
+// Anonymous User ID (for development mode)
+// -----------------------------------------------------------------------------
+
+// Get or generate anonymous user ID for SKIP_AUTH mode
+function getAnonymousUserId(): string {
+  let anonymousId = localStorage.getItem('anonymous_user_id');
+  if (!anonymousId) {
+    // Generate unique ID: timestamp + random string
+    anonymousId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+    localStorage.setItem('anonymous_user_id', anonymousId);
+    console.log('✅ Generated anonymous user ID:', anonymousId);
+  }
+  return anonymousId;
+}
+
+// -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
 
@@ -54,6 +70,11 @@ class ApiClient {
     // Add authorization header if token exists
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
+    }
+
+    // Add anonymous user ID header for SKIP_AUTH mode
+    if (!token) {
+      headers['X-Anonymous-User-ID'] = getAnonymousUserId();
     }
 
     try {
