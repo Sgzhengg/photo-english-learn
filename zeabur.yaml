@@ -35,6 +35,7 @@ services:
       - TTS_SERVICE_URL=http://tts-service.zeabur.internal:8006
       - ASR_SERVICE_URL=http://asr-service.zeabur.internal:8080
       - SKIP_AUTH=true
+      - GROQ_API_KEY=${GROQ_API_KEY}
     buildCommand: |
       pip install -r requirements.txt
     runCommand: uvicorn services.api-gateway.main:app --host 0.0.0.0 --port $PORT
@@ -110,6 +111,8 @@ services:
     ports:
       - port: 8080
         public: false
+    env:
+      - GROQ_API_KEY=${GROQ_API_KEY}
 
 # ============================================
 # 全局环境变量
@@ -118,3 +121,4 @@ env:
   - SKIP_AUTH=true
   - DATABASE_URL=${DATABASE_URL}
   - REDIS_URL=${REDIS_URL}
+  - GROQ_API_KEY=${GROQ_API_KEY}
