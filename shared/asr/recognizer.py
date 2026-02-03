@@ -252,28 +252,32 @@ class SpeechRecognizer:
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:
-                logger.warning(f"Groq API key invalid or lacks permission (403), falling back to mock data. Error: {e}")
-                # API密钥无效或没有权限，返回模拟数据
+                logger.warning(f"Groq API key invalid or lacks permission (403). Please configure GROQ_API_KEY in Zeabur. Error: {e}")
+                # API密钥无效或没有权限，返回空文本和特殊标记
                 return {
-                    "text": "I'm working on my laptop while enjoying a fresh cup of coffee.",
-                    "confidence": 0.95,
-                    "engine": "groq-whisper-mock",
+                    "text": "",
+                    "confidence": 0.0,
+                    "engine": "groq-whisper-error",
                     "language": language,
-                    "mock": True  # 标记为模拟数据
+                    "mock": True,
+                    "error": "API_KEY_INVALID",
+                    "error_message": "Groq API key not configured or invalid. Please set GROQ_API_KEY environment variable in Zeabur."
                 }
             else:
                 logger.error(f"Groq Whisper API HTTP error: {e}")
                 raise
         except Exception as e:
             logger.error(f"Groq Whisper API error: {e}")
-            # 其他错误也返回模拟数据，确保用户体验
-            logger.warning("Falling back to mock data due to API error")
+            # 其他错误也返回空文本和错误信息
+            logger.warning("Falling back to empty result due to API error")
             return {
-                "text": "I'm working on my laptop while enjoying a fresh cup of coffee.",
-                "confidence": 0.95,
-                "engine": "groq-whisper-mock",
+                "text": "",
+                "confidence": 0.0,
+                "engine": "groq-whisper-error",
                 "language": language,
-                "mock": True
+                "mock": True,
+                "error": "API_ERROR",
+                "error_message": f"Speech recognition error: {str(e)}"
             }
 
     async def _recognize_with_azure(
@@ -330,7 +334,9 @@ class SpeechRecognizer:
     def calculate_pronunciation_score(
         self,
         target_text: str,
-        recorded_text: str
+        recorded_text: str,
+        mock: bool = False,
+        error: Optional[str] = None
     ) -> Dict[str, Any]:
         """
         计算发音评分
@@ -338,14 +344,34 @@ class SpeechRecognizer:
         Args:
             target_text: 目标文本（原句）
             recorded_text: 用户录音识别的文本
+            mock: 是否使用模拟数据
+            error: 错误类型
 
         Returns:
             评分结果
         """
         import re
+
+        # 如果是模拟数据或有错误，返回特殊结果
+        if mock or error or not recorded_text or not recorded_text.strip():
+            logger.warning(f"Pronunciation scoring failed: mock={mock}, error={error}, recorded_text_length={len(recorded_text)}")
+            return {
+                "overall": 0,
+                "accuracy": 0,
+                "fluency": 0,
+                "completeness": 0,
+                "feedback": "语音识别失败。请确保已在 Zeabur 配置 GROQ_API_KEY 环境变量。" if error == "API_KEY_INVALID" else "无法识别您的语音，请重新录音。",
+                "error": error or "RECOGNITION_FAILED",
+                "mock": True
+            }
+
         # 预处理文本
         original_words = target_text.lower().split()
         recorded_words = recorded_text.lower().split()
+
+        logger.info(f"Calculating pronunciation score: target_words={len(original_words)}, recorded_words={len(recorded_words)}")
+        logger.info(f"Target text: '{target_text}'")
+        logger.info(f"Recorded text: '{recorded_text}'")
 
         # 完整度：说出多少个词
         completeness = min((len(recorded_words) / len(original_words)) * 100, 100) if original_words else 0
@@ -364,6 +390,8 @@ class SpeechRecognizer:
         # 总分：准确度 50% + 流利度 30% + 完整度 20%
         overall = accuracy * 0.5 + fluency * 0.3 + completeness * 0.2
 
+        logger.info(f"Score results: accuracy={accuracy:.2f}, fluency={fluency:.2f}, completeness={completeness:.2f}, overall={overall:.2f}")
+
         # 生成反馈
         if overall >= 90:
             feedback = "太棒了！发音非常标准！"
@@ -379,5 +407,6 @@ class SpeechRecognizer:
             "accuracy": round(accuracy),
             "fluency": round(fluency),
             "completeness": round(completeness),
-            "feedback": feedback
+            "feedback": feedback,
+            "mock": False
         }

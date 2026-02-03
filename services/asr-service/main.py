@@ -172,11 +172,15 @@ async def evaluate_pronunciation(
         )
 
         recorded_text = recognition_result.get("text", "")
+        is_mock = recognition_result.get("mock", False)
+        error = recognition_result.get("error")
 
         # 计算评分
         score = recognizer.calculate_pronunciation_score(
             target_text=target_text,
-            recorded_text=recorded_text
+            recorded_text=recorded_text,
+            mock=is_mock,
+            error=error
         )
 
         return success_response(data={
