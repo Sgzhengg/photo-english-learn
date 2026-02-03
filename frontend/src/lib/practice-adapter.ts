@@ -163,37 +163,19 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
     });
 
     // ============================================
-    // 题型3：听音辨义（如果有发音）
+    // 题型3：听写题（播放音频，拼写单词）
     // ============================================
-    if (word.phonetic) {
-      // 生成干扰选项（从其他单词中选择）
-      const wrongOptions = getRandomItems(allWords, 3, word.word);
-
-      // 如果干扰选项不够，从其他单词释义生成假单词
-      const getWrongOption = (index: number): string => {
-        if (index < wrongOptions.length) {
-          return wrongOptions[index];
-        }
-        // 使用其他单词的释义生成干扰
-        const wrongDef = getRandomItems(allDefinitions, 1, word.definition)[0] || '未知';
-        return `干扰词${index + 1}`;
-      };
-
-      questions.push({
-        id: `q-${questionIndex++}`,
-        type: 'listening',
-        question: `根据发音选择正确的单词：${word.phonetic}`,
-        wordId: word.id,
-        correctAnswer: word.word,
-        hint: word.definition,
-        options: [
-          { id: `opt-${questionIndex}-a`, text: word.word, isCorrect: true },
-          { id: `opt-${questionIndex}-b`, text: getWrongOption(0), isCorrect: false },
-          { id: `opt-${questionIndex}-c`, text: getWrongOption(1), isCorrect: false },
-          { id: `opt-${questionIndex}-d`, text: getWrongOption(2), isCorrect: false },
-        ].sort(() => Math.random() - 0.5),
-      });
-    }
+    questions.push({
+      id: `q-${questionIndex++}`,
+      type: 'dictation',
+      question: `听音拼写出单词`,
+      wordId: word.id,
+      correctAnswer: word.word.toLowerCase(),
+      hint: `提示：${word.definition}`,
+      options: [],
+      audioUrl: word.pronunciationUrl || '',  // 预留音频URL字段
+      phonetic: word.phonetic,  // 音标
+    });
   });
 
   // 打乱所有题目顺序，避免题型连续出现

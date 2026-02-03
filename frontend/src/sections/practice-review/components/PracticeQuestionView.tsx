@@ -14,11 +14,11 @@ interface PracticeQuestionViewProps {
 }
 
 // 题型图标
-function QuestionTypeIcon({ type }: { type: 'fill-blank' | 'spelling' | 'listening' }) {
+function QuestionTypeIcon({ type }: { type: 'fill-blank' | 'spelling' | 'dictation' }) {
   const icons = {
     'fill-blank': <span className="text-lg">✏️</span>,
     'spelling': <span className="text-lg">⌨️</span>,
-    'listening': <span className="text-lg">🎧</span>,
+    'dictation': <span className="text-lg">🎤</span>,
   }
   return icons[type]
 }
@@ -133,7 +133,7 @@ export function PracticeQuestionView({
               <span className="text-sm text-slate-600 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
                 {currentQuestion.type === 'fill-blank' && '填空题'}
                 {currentQuestion.type === 'spelling' && '拼写题'}
-                {currentQuestion.type === 'listening' && '听音题'}
+                {currentQuestion.type === 'dictation' && '听写题'}
               </span>
             </div>
           </div>
@@ -185,64 +185,65 @@ export function PracticeQuestionView({
             </div>
           )}
 
-          {/* 听音题提示 */}
-          {currentQuestion.type === 'listening' && (
-            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
-              <p className="text-sm text-amber-800 dark:text-amber-200" style={{ fontFamily: 'Inter, sans-serif' }}>
-                💡 提示：根据音标选择正确的单词
-              </p>
+          {/* 听写题音频播放按钮 */}
+          {currentQuestion.type === 'dictation' && (
+            <div className="mt-3">
+              <button
+                onClick={handleAudioToggle}
+                className={`flex items-center gap-2 px-4 py-2.5 rounded-xl font-medium transition-all ${
+                  isPlayingAudio
+                    ? 'bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-300 border border-amber-300 dark:border-amber-700'
+                    : 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 border border-indigo-300 dark:border-indigo-700 hover:bg-indigo-200 dark:hover:bg-indigo-900/40'
+                }`}
+                style={{ fontFamily: 'Inter, sans-serif' }}
+              >
+                {isPlayingAudio ? (
+                  <>
+                    <VolumeX className="w-5 h-5" />
+                    <span>停止播放</span>
+                  </>
+                ) : (
+                  <>
+                    <Volume2 className="w-5 h-5" />
+                    <span>播放发音</span>
+                  </>
+                )}
+              </button>
+              {currentQuestion.phonetic && (
+                <p className="mt-2 text-sm text-slate-600 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
+                  音标：{currentQuestion.phonetic}
+                </p>
+              )}
             </div>
           )}
         </div>
 
         {/* 答题区域 */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
-          {currentQuestion.type === 'listening' ? (
-            /* 听音题选项（选择题形式） */
-            <div className="space-y-3">
-              {currentQuestion.options.map((option, index) => (
-                <button
-                  key={option.id}
-                  onClick={() => setLocalAnswer(option.text)}
-                  disabled={!!showFeedback}
-                  className={`w-full text-left px-5 py-4 rounded-xl border-2 transition-all ${
-                    currentAnswer === option.text
-                      ? 'border-indigo-500 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-700 dark:text-indigo-300'
-                      : 'border-slate-200 dark:border-slate-700 hover:border-slate-300 dark:hover:border-slate-600 text-slate-700 dark:text-slate-300'
-                  } ${showFeedback ? 'cursor-not-allowed opacity-70' : 'cursor-pointer'}`}
-                  style={{ fontFamily: 'Inter, sans-serif' }}
-                >
-                  <div className="flex items-center gap-3">
-                    <span className="flex-shrink-0 w-7 h-7 rounded-full bg-slate-200 dark:bg-slate-700 flex items-center justify-center text-sm font-semibold text-slate-600 dark:text-slate-400">
-                      {index + 1}
-                    </span>
-                    <span className="text-lg">{option.text}</span>
-                  </div>
-                </button>
-              ))}
-            </div>
-          ) : (
-            /* 填空题和听写题输入框 */
-            <div>
-              <input
-                type="text"
-                value={currentAnswer}
-                onChange={(e) => setLocalAnswer(e.target.value)}
-                disabled={!!showFeedback}
-                placeholder="输入你的答案..."
-                className={`w-full px-5 py-4 text-lg rounded-xl border-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 transition-all ${
-                  showFeedback
-                    ? 'border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-70'
-                    : 'border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50'
-                }`}
-                style={{ fontFamily: 'Inter, sans-serif' }}
-                onKeyDown={(e) => e.key === 'Enter' && !showFeedback && handleSubmit()}
-              />
-              <p className="mt-2 text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-                按 Enter 键快速提交
-              </p>
-            </div>
-          )}
+          {/* 所有题型都使用输入框 */}
+          <div>
+            <input
+              type="text"
+              value={currentAnswer}
+              onChange={(e) => setLocalAnswer(e.target.value)}
+              disabled={!!showFeedback}
+              placeholder={
+                currentQuestion.type === 'dictation'
+                  ? '听音后输入单词...'
+                  : '输入你的答案...'
+              }
+              className={`w-full px-5 py-4 text-lg rounded-xl border-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 transition-all ${
+                showFeedback
+                  ? 'border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-70'
+                  : 'border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50'
+              }`}
+              style={{ fontFamily: 'Inter, sans-serif' }}
+              onKeyDown={(e) => e.key === 'Enter' && !showFeedback && handleSubmit()}
+            />
+            <p className="mt-2 text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
+              按 Enter 键快速提交
+            </p>
+          </div>
 
           {/* 反馈提示 */}
           {showFeedback && (
