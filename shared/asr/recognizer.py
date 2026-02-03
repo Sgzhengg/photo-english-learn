@@ -217,7 +217,7 @@ class SpeechRecognizer:
                         "file": (os.path.basename(tmp_file_path), audio_data, "audio/mpeg")
                     }
                     data = {
-                        "model": "whisper-large-v3",
+                        "model": "whisper-large-v3-turbo",  # 使用 turbo 版本 (更快、更便宜)
                         "language": language.split("-")[0],  # en-US -> en
                         "response_format": "verbose_json"
                     }
@@ -252,7 +252,12 @@ class SpeechRecognizer:
 
         except httpx.HTTPStatusError as e:
             if e.response.status_code == 403:
-                logger.warning(f"Groq API key invalid or lacks permission (403). Please configure GROQ_API_KEY in Zeabur. Error: {e}")
+                # 读取详细错误信息
+                error_detail = e.response.text[:500] if e.response.text else "No detail"
+                logger.warning(f"Groq API returned 403 Forbidden")
+                logger.warning(f"Response: {error_detail}")
+                logger.warning(f"API Key (first 10): {self.groq_api_key[:10]}...{self.groq_api_key[-6:] if self.groq_api_key else 'None'}")
+                logger.warning(f"Model: whisper-large-v3-turbo")
                 # API密钥无效或没有权限，返回空文本和特殊标记
                 return {
                     "text": "",
