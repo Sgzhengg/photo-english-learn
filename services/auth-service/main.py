@@ -439,6 +439,8 @@ async def update_user_profile(
     nickname = request_data.get("nickname")
     avatar = request_data.get("avatar") or request_data.get("avatar_url")
 
+    logger.info(f"开始更新用户资料: {current_user.username}, avatar长度: {len(avatar) if avatar else 0}")
+
     if nickname:
         current_user.nickname = nickname
     if avatar:
@@ -446,40 +448,44 @@ async def update_user_profile(
 
     try:
         await db.commit()
-        logger.info(f"更新用户资料成功: {current_user.username}, avatar_url长度: {len(avatar) if avatar else 0}")
+        logger.info(f"数据库提交成功: user_id={current_user.user_id}")
     except Exception as e:
-        logger.error(f"更新用户资料失败: {e}")
+        logger.error(f"数据库提交失败: {e}", exc_info=True)
         await db.rollback()
         raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
 
-    # 重新查询用户以获取最新数据（避免 Session 问题）
-    from sqlalchemy import select
-    result = await db.execute(
-        select(User).where(User.user_id == current_user.user_id)
-    )
-    updated_user = result.scalar_one_or_none()
+    # 直接使用 current_user 构建响应（已提交，数据已更新）
+    # 不需要 refresh 或重新查询，直接使用对象的当前状态
+    user_data = {
+        "user_id": current_user.user_id,
+        "username": current_user.username,
+        "email": current_user.email,
+        "nickname": current_user.nickname,
+        "avatar_url": current_user.avatar_url,
+        "created_at": current_user.created_at,
+    }
 
-    if not updated_user:
-        raise HTTPException(status_code=404, detail="用户不存在")
-
-    # 直接返回用户对象，不要嵌套在 data.user 中
-    user_data = UserResponse.model_validate(updated_user).model_dump()
+    # 使用 UserResponse 验证格式
+    user_response = UserResponse.model_validate(user_data)
 
     # 添加前端的字段映射
-    user_data["id"] = str(user_data.pop("user_id"))
-    user_data["username"] = user_data.get("username", "")
-    user_data["email"] = user_data.get("email", "")
-    user_data["nickname"] = user_data.get("nickname", "")
-    user_data["avatar_url"] = user_data.get("avatar_url")
-    user_data["phone"] = None  # User模型没有phone字段
-    user_data["englishLevel"] = "beginner"  # 默认值
-    user_data["dailyGoal"] = "20"  # 默认值
-    user_data["status"] = "active"
-    user_data["createdAt"] = user_data.get("created_at", "").isoformat() if user_data.get("created_at") else ""
-    user_data["lastLoginAt"] = user_data.get("created_at", "").isoformat() if user_data.get("created_at") else ""
-    user_data["hasCompletedOnboarding"] = False  # 默认值
+    result_data = user_response.model_dump()
+    result_data["id"] = str(result_data.pop("user_id"))
+    result_data["username"] = result_data.get("username", "")
+    result_data["email"] = result_data.get("email", "")
+    result_data["nickname"] = result_data.get("nickname", "")
+    result_data["avatar_url"] = result_data.get("avatar_url")
+    result_data["phone"] = None  # User模型没有phone字段
+    result_data["englishLevel"] = "beginner"  # 默认值
+    result_data["dailyGoal"] = "20"  # 默认值
+    result_data["status"] = "active"
+    result_data["createdAt"] = result_data.get("created_at", "").isoformat() if result_data.get("created_at") else ""
+    result_data["lastLoginAt"] = result_data.get("created_at", "").isoformat() if result_data.get("created_at") else ""
+    result_data["hasCompletedOnboarding"] = False  # 默认值
 
-    return success_response(data=user_data)
+    logger.info(f"返回用户数据: id={result_data['id']}, avatar_url长度={len(result_data.get('avatar_url') or '')}")
+
+    return success_response(data=result_data)
 
 
 @app.post("/user/change-password", tags=["User"])
