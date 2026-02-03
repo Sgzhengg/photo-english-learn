@@ -35,7 +35,7 @@ async def create_review_record(
     level: int = 0
 ) -> ReviewRecord:
     """
-    创建复习记录
+    创建复习记录（如果已存在则返回现有记录）
 
     Args:
         db: 数据库会话
@@ -44,8 +44,24 @@ async def create_review_record(
         level: 难度等级（0-8，对应艾宾浩斯曲线的 9 个阶段）
 
     Returns:
-        创建的复习记录
+        创建或已存在的复习记录
     """
+    # 检查是否已存在该用户的该单词复习记录
+    result = await db.execute(
+        select(ReviewRecord).where(
+            and_(
+                ReviewRecord.user_id == user_id,
+                ReviewRecord.word_id == word_id
+            )
+        )
+    )
+    existing_record = result.scalar_one_or_none()
+
+    if existing_record:
+        # 记录已存在，直接返回
+        return existing_record
+
+    # 创建新记录
     now = utc_now()
 
     # 计算下次复习时间
