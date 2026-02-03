@@ -1,11 +1,14 @@
 """
 测试 Groq API 密钥是否有效
+请在运行前设置 GROQ_API_KEY 环境变量，或者修改下面的 api_key 变量
 """
 import httpx
 import asyncio
+import os
 
 async def test_groq_api():
-    api_key = "YOUR_GROQ_API_KEY_HERE"
+    # 从环境变量读取 API key，或者使用下面的默认值
+    api_key = os.getenv("GROQ_API_KEY", "YOUR_GROQ_API_KEY_HERE")
 
     print(f"Testing Groq API Key: {api_key[:10]}...")
     print()
