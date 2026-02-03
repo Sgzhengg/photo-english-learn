@@ -444,13 +444,26 @@ async def update_user_profile(
     if avatar:
         current_user.avatar_url = avatar
 
-    await db.commit()
-    await db.refresh(current_user)
+    try:
+        await db.commit()
+        logger.info(f"更新用户资料成功: {current_user.username}, avatar_url长度: {len(avatar) if avatar else 0}")
+    except Exception as e:
+        logger.error(f"更新用户资料失败: {e}")
+        await db.rollback()
+        raise HTTPException(status_code=500, detail=f"更新失败: {str(e)}")
 
-    logger.info(f"更新用户资料: {current_user.username}")
+    # 重新查询用户以获取最新数据（避免 Session 问题）
+    from sqlalchemy import select
+    result = await db.execute(
+        select(User).where(User.user_id == current_user.user_id)
+    )
+    updated_user = result.scalar_one_or_none()
+
+    if not updated_user:
+        raise HTTPException(status_code=404, detail="用户不存在")
 
     # 直接返回用户对象，不要嵌套在 data.user 中
-    user_data = UserResponse.model_validate(current_user).model_dump()
+    user_data = UserResponse.model_validate(updated_user).model_dump()
 
     # 添加前端的字段映射
     user_data["id"] = str(user_data.pop("user_id"))

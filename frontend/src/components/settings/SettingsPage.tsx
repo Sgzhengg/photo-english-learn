@@ -90,18 +90,40 @@ export function SettingsPage() {
       // Convert image to base64 for storage
       const reader = new FileReader();
       reader.onloadend = async () => {
-        const base64String = reader.result as string;
+        try {
+          const base64String = reader.result as string;
 
-        // Call API to update avatar
-        await userApi.updateProfile({ avatar_url: base64String });
-        await refreshUser();
-        showSuccess('头像已更新');
+          console.log('上传头像，base64长度:', base64String.length);
+
+          // Call API to update avatar
+          const result = await userApi.updateProfile({ avatar_url: base64String });
+
+          console.log('头像上传结果:', result);
+
+          if (result.success) {
+            console.log('头像上传成功，刷新用户数据');
+            await refreshUser();
+            showSuccess('头像已更新');
+          } else {
+            console.error('头像上传失败:', result.error);
+            showSuccess('头像上传失败: ' + (result.error || '未知错误'));
+          }
+        } catch (error) {
+          console.error('头像上传异常:', error);
+          showSuccess('头像上传失败，请重试');
+        } finally {
+          setIsSaving(false);
+        }
+      };
+      reader.onerror = () => {
+        console.error('文件读取失败');
+        showSuccess('文件读取失败');
+        setIsSaving(false);
       };
       reader.readAsDataURL(file);
     } catch (error) {
       console.error('Failed to upload avatar:', error);
       showSuccess('头像上传失败，请重试');
-    } finally {
       setIsSaving(false);
     }
 

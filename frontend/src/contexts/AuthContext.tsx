@@ -128,11 +128,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const refreshUser = async () => {
+    console.log('[Auth] 刷新用户数据');
     const response = await authApi.getCurrentUser();
 
+    console.log('[Auth] 刷新响应:', response);
     if (response.success && response.data) {
+      console.log('[Auth] 刷新成功，用户数据:', response.data);
+      console.log('[Auth] avatar_url:', response.data.avatar_url);
       setUser(response.data);
     } else {
+      console.error('[Auth] 刷新失败:', response.error);
       throw new Error(response.error || 'Failed to refresh user data');
     }
   };
