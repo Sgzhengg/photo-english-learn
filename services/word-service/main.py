@@ -457,6 +457,8 @@ async def delete_word(
     从生词库中删除单词
 
     - **word_id**: 用户生词记录 ID
+
+    同时删除对应的复习记录，保持数据一致性
     """
     result = await db.execute(
         select(UserWord).where(
@@ -474,7 +476,33 @@ async def delete_word(
             detail="生词记录不存在"
         )
 
+    # 保存 word_id 用于删除复习记录
+    word_id_to_delete = user_word.word_id
+
+    # 删除生词记录
     await db.delete(user_word)
+
+    # 同时删除对应的复习记录（保持数据一致性）
+    try:
+        from shared.database.models import ReviewRecord
+        review_result = await db.execute(
+            select(ReviewRecord).where(
+                and_(
+                    ReviewRecord.user_id == current_user.user_id,
+                    ReviewRecord.word_id == word_id_to_delete
+                )
+            )
+        )
+        review_records = review_result.scalars().all()
+
+        # 删除所有匹配的复习记录
+        for record in review_records:
+            await db.delete(record)
+
+        logger.info(f"删除了 {len(review_records)} 条复习记录")
+    except Exception as e:
+        logger.warning(f"删除复习记录失败（非关键错误）: {e}")
+
     await db.commit()
 
     return success_response(data={"message": "删除成功"})
