@@ -45,9 +45,28 @@ export function SingleWordPracticePage() {
         const result = await vocabularyApi.getWord(wordId);
         if (result.success && result.data) {
           // 后端返回 UserWordResponse，需要从 word 字段获取单词数据
-          const wordData = (result.data as any).word || result.data;
-          setWord(wordData);
-          generateQuestions(wordData);
+          const backendWord = (result.data as any).word || result.data;
+
+          // 手动映射字段，匹配前端 Word 类型
+          const wordData = {
+            id: wordId,
+            word: backendWord.english_word || '',
+            phonetic: backendWord.phonetic_us || backendWord.phonetic_uk || '',
+            definition: backendWord.chinese_meaning || '',
+            partOfSpeech: 'n.',
+            examples: [],
+            pronunciationUrl: backendWord.audio_url || '',
+            sourcePhoto: undefined,
+            learningRecord: {
+              addedDate: (result.data as any).created_at || new Date().toISOString(),
+              reviewCount: 0,
+              masteryLevel: 'learning',
+              lastReviewDate: (result.data as any).created_at || new Date().toISOString(),
+            },
+            tags: [],
+          };
+          setWord(wordData as any);
+          generateQuestions(wordData as any);
         } else {
           console.error('Failed to fetch word:', result.error);
           navigate('/app/vocabulary');
