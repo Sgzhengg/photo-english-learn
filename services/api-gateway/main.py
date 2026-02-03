@@ -67,7 +67,7 @@ ROUTE_PREFIXES = {
 }
 
 # 不移除前缀的路由（保留完整路径）
-PRESERVE_PREFIX_ROUTES = ["/user", "/photo", "/vocabulary"]
+PRESERVE_PREFIX_ROUTES = ["/user", "/photo", "/vocabulary", "/practice"]
 
 
 def determine_service(path: str) -> Tuple[str, str]:
