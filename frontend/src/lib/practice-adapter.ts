@@ -99,13 +99,13 @@ export function adaptReviewRecordsToDailyTask(
 /**
  * 根据单词生成练习题
  * 参考百词斩、墨墨背单词、Duolingo 等优秀软件的设计
+ * 每个单词生成3种题型
  */
 export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion[] {
   const questions: PracticeQuestion[] = [];
   let questionIndex = 0;
 
-  // 用于生成干扰选项的其他单词释义
-  const allDefinitions = words.map(w => w.definition);
+  // 用于生成干扰选项的其他单词
   const allWords = words.map(w => w.word);
 
   // 从数组中随机选择n个不重复的元素
@@ -117,28 +117,7 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
 
   words.forEach((word) => {
     // ============================================
-    // 题型1：看英文选中文（四选一选择题）
-    // ============================================
-    const wrongDefinitions = getRandomItems(allDefinitions, 3, word.definition);
-    const choiceOptions = [
-      { id: `opt-${questionIndex}-a`, text: word.definition, isCorrect: true },
-      { id: `opt-${questionIndex}-b`, text: wrongDefinitions[0] || '选项B', isCorrect: false },
-      { id: `opt-${questionIndex}-c`, text: wrongDefinitions[1] || '选项C', isCorrect: false },
-      { id: `opt-${questionIndex}-d`, text: wrongDefinitions[2] || '选项D', isCorrect: false },
-    ].sort(() => Math.random() - 0.5); // 打乱选项顺序
-
-    questions.push({
-      id: `q-${questionIndex++}`,
-      type: 'multiple-choice',
-      question: `"${word.word}" 的中文释义是？`,
-      wordId: word.id,
-      correctAnswer: word.definition,
-      hint: word.phonetic,
-      options: choiceOptions,
-    });
-
-    // ============================================
-    // 题型2：看中文拼写英文（拼写题）
+    // 题型1：看中文拼写英文（拼写题）
     // ============================================
     questions.push({
       id: `q-${questionIndex++}`,
@@ -151,7 +130,7 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
     });
 
     // ============================================
-    // 题型3：单词填空（挖空题）
+    // 题型2：单词填空（挖空题）
     // ============================================
     // 随机挖空1-2个字母
     const blankCount = Math.min(2, Math.floor(word.word.length / 3));
@@ -180,7 +159,7 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
     });
 
     // ============================================
-    // 题型4：听音辨义（如果有发音）
+    // 题型3：听音辨义（如果有发音）
     // ============================================
     if (word.phonetic) {
       questions.push({
@@ -198,25 +177,6 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
         ].sort(() => Math.random() - 0.5),
       });
     }
-
-    // ============================================
-    // 题型5：判断题（难度较高）
-    // ============================================
-    const isCorrectStatement = Math.random() > 0.5;
-    const wrongDefinition = getRandomItems(allDefinitions, 1, word.definition)[0];
-
-    questions.push({
-      id: `q-${questionIndex++}`,
-      type: 'true-false',
-      question: `"${word.word}" 的意思是"${isCorrectStatement ? word.definition : wrongDefinition}"，对吗？`,
-      wordId: word.id,
-      correctAnswer: isCorrectStatement ? '正确' : '错误',
-      hint: isCorrectStatement ? '' : `正确答案：${word.definition}`,
-      options: [
-        { id: `opt-${questionIndex}-a`, text: '正确', isCorrect: isCorrectStatement },
-        { id: `opt-${questionIndex}-b`, text: '错误', isCorrect: !isCorrectStatement },
-      ],
-    });
   });
 
   // 打乱所有题目顺序，避免题型连续出现
