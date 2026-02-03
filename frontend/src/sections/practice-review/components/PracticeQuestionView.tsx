@@ -14,11 +14,11 @@ interface PracticeQuestionViewProps {
 }
 
 // 题型图标
-function QuestionTypeIcon({ type }: { type: 'fill-blank' | 'multiple-choice' | 'dictation' }) {
+function QuestionTypeIcon({ type }: { type: 'fill-blank' | 'spelling' | 'listening' }) {
   const icons = {
     'fill-blank': <span className="text-lg">✏️</span>,
-    'multiple-choice': <span className="text-lg">📝</span>,
-    'dictation': <span className="text-lg">🎧</span>,
+    'spelling': <span className="text-lg">⌨️</span>,
+    'listening': <span className="text-lg">🎧</span>,
   }
   return icons[type]
 }
@@ -42,10 +42,7 @@ export function PracticeQuestionView({
   const currentAnswer = userAnswers.get(currentQuestion.id) || localAnswer
   const progress = ((currentQuestionIndex + 1) / questions.length) * 100
 
-  // Remove phonetic symbols (text between /.../) from question for dictation type
-  const displayQuestion = currentQuestion.type === 'dictation'
-    ? currentQuestion.question.replace(/\/[^/]+\//g, '').trim()
-    : currentQuestion.question
+  const displayQuestion = currentQuestion.question
 
   const handleSubmit = () => {
     if (!currentAnswer.trim()) return
@@ -131,11 +128,11 @@ export function PracticeQuestionView({
               题目 {currentQuestionIndex + 1} / {questions.length}
             </span>
             <div className="flex items-center gap-1">
-              <QuestionTypeIcon type={currentQuestion.type} />
+              <QuestionTypeIcon type={currentQuestion.type as any} />
               <span className="text-sm text-slate-600 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
                 {currentQuestion.type === 'fill-blank' && '填空题'}
-                {currentQuestion.type === 'multiple-choice' && '选择题'}
-                {currentQuestion.type === 'dictation' && '听写题'}
+                {currentQuestion.type === 'spelling' && '拼写题'}
+                {currentQuestion.type === 'listening' && '听音题'}
               </span>
             </div>
           </div>
@@ -187,23 +184,20 @@ export function PracticeQuestionView({
             </div>
           )}
 
-          {/* 听写题音频播放按钮 */}
-          {currentQuestion.type === 'dictation' && (
-            <button
-              onClick={handleAudioToggle}
-              className="mt-4 flex items-center gap-2 px-4 py-2 bg-indigo-100 dark:bg-indigo-900/30 text-indigo-700 dark:text-indigo-300 rounded-lg font-medium hover:bg-indigo-200 dark:hover:bg-indigo-900/50 transition-colors"
-              style={{ fontFamily: 'Inter, sans-serif' }}
-            >
-              {isPlayingAudio ? <VolumeX className="w-5 h-5" /> : <Volume2 className="w-5 h-5" />}
-              {isPlayingAudio ? '停止播放' : '播放音频'}
-            </button>
+          {/* 听音题提示 */}
+          {currentQuestion.type === 'listening' && (
+            <div className="mt-3 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+              <p className="text-sm text-amber-800 dark:text-amber-200" style={{ fontFamily: 'Inter, sans-serif' }}>
+                💡 提示：根据音标选择正确的单词
+              </p>
+            </div>
           )}
         </div>
 
         {/* 答题区域 */}
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
-          {currentQuestion.type === 'multiple-choice' ? (
-            /* 选择题选项 */
+          {currentQuestion.type === 'listening' ? (
+            /* 听音题选项（选择题形式） */
             <div className="space-y-3">
               {currentQuestion.options.map((option, index) => (
                 <button
