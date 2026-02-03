@@ -173,8 +173,8 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
       correctAnswer: word.word.toLowerCase(),
       hint: `提示：${word.definition}`,
       options: [],
-      audioUrl: word.pronunciationUrl || '',  // 预留音频URL字段
-      phonetic: word.phonetic,  // 音标
+      audioUrl: '',  // 使用 Web Speech API，不需要实际音频 URL
+      phonetic: word.phonetic,
     });
   });
 
