@@ -2,7 +2,14 @@
 // Data Types
 // =============================================================================
 
-export type PracticeType = 'fill-blank' | 'multiple-choice' | 'dictation'
+export type PracticeType =
+  | 'fill-blank'      // 填空题：补全单词
+  | 'multiple-choice' // 选择题：四选一
+  | 'spelling'        // 拼写题：看中文拼写英文
+  | 'listening'       // 听音题：根据发音选单词
+  | 'true-false'      // 判断题：判断释义是否正确
+  | 'dictation'       // 听写题（预留）
+
 export type MasteryLevel = 'learning' | 'familiar' | 'mastered'
 
 export interface WordInTask {

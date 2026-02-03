@@ -98,24 +98,35 @@ export function adaptReviewRecordsToDailyTask(
 
 /**
  * 根据单词生成练习题
+ * 参考百词斩、墨墨背单词、Duolingo 等优秀软件的设计
  */
 export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion[] {
   const questions: PracticeQuestion[] = [];
   let questionIndex = 0;
 
-  words.forEach((word) => {
-    // 1. 填空题
-    questions.push({
-      id: `q-${questionIndex++}`,
-      type: 'fill-blank',
-      question: `请补全单词：${word.word.charAt(0)}${'_'.repeat(word.word.length - 2)}${word.word.charAt(word.word.length - 1)}`,
-      wordId: word.id,
-      correctAnswer: word.word,
-      hint: word.definition,
-      options: [],
-    });
+  // 用于生成干扰选项的其他单词释义
+  const allDefinitions = words.map(w => w.definition);
+  const allWords = words.map(w => w.word);
 
-    // 2. 选择题
+  // 从数组中随机选择n个不重复的元素
+  const getRandomItems = <T>(arr: T[], count: number, excludeItem?: T): T[] => {
+    const filtered = excludeItem !== undefined ? arr.filter(item => item !== excludeItem) : arr;
+    const shuffled = [...filtered].sort(() => Math.random() - 0.5);
+    return shuffled.slice(0, Math.min(count, shuffled.length));
+  };
+
+  words.forEach((word) => {
+    // ============================================
+    // 题型1：看英文选中文（四选一选择题）
+    // ============================================
+    const wrongDefinitions = getRandomItems(allDefinitions, 3, word.definition);
+    const choiceOptions = [
+      { id: `opt-${questionIndex}-a`, text: word.definition, isCorrect: true },
+      { id: `opt-${questionIndex}-b`, text: wrongDefinitions[0] || '选项B', isCorrect: false },
+      { id: `opt-${questionIndex}-c`, text: wrongDefinitions[1] || '选项C', isCorrect: false },
+      { id: `opt-${questionIndex}-d`, text: wrongDefinitions[2] || '选项D', isCorrect: false },
+    ].sort(() => Math.random() - 0.5); // 打乱选项顺序
+
     questions.push({
       id: `q-${questionIndex++}`,
       type: 'multiple-choice',
@@ -123,16 +134,93 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
       wordId: word.id,
       correctAnswer: word.definition,
       hint: word.phonetic,
+      options: choiceOptions,
+    });
+
+    // ============================================
+    // 题型2：看中文拼写英文（拼写题）
+    // ============================================
+    questions.push({
+      id: `q-${questionIndex++}`,
+      type: 'spelling',
+      question: `"${word.definition}" 的英文单词是？`,
+      wordId: word.id,
+      correctAnswer: word.word.toLowerCase(),
+      hint: `首字母: ${word.word.charAt(0).toUpperCase()}`,
+      options: [],
+    });
+
+    // ============================================
+    // 题型3：单词填空（挖空题）
+    // ============================================
+    // 随机挖空1-2个字母
+    const blankCount = Math.min(2, Math.floor(word.word.length / 3));
+    let maskedWord = word.word;
+    const blankIndices: number[] = [];
+
+    while (blankIndices.length < blankCount) {
+      const idx = Math.floor(Math.random() * (word.word.length - 2)) + 1; // 不挖首尾字母
+      if (!blankIndices.includes(idx)) {
+        blankIndices.push(idx);
+      }
+    }
+
+    blankIndices.forEach(idx => {
+      maskedWord = maskedWord.substring(0, idx) + '_' + maskedWord.substring(idx + 1);
+    });
+
+    questions.push({
+      id: `q-${questionIndex++}`,
+      type: 'fill-blank',
+      question: `请补全单词：${maskedWord}`,
+      wordId: word.id,
+      correctAnswer: word.word,
+      hint: word.definition,
+      options: [],
+    });
+
+    // ============================================
+    // 题型4：听音辨义（如果有发音）
+    // ============================================
+    if (word.phonetic) {
+      questions.push({
+        id: `q-${questionIndex++}`,
+        type: 'listening',
+        question: `根据发音选择正确的单词：${word.phonetic}`,
+        wordId: word.id,
+        correctAnswer: word.word,
+        hint: word.definition,
+        options: [
+          { id: `opt-${questionIndex}-a`, text: word.word, isCorrect: true },
+          { id: `opt-${questionIndex}-b`, text: getRandomItems(allWords, 1, word.word)[0] || '选项B', isCorrect: false },
+          { id: `opt-${questionIndex}-c`, text: getRandomItems(allWords, 1, word.word)[0] || '选项C', isCorrect: false },
+          { id: `opt-${questionIndex}-d`, text: getRandomItems(allWords, 1, word.word)[0] || '选项D', isCorrect: false },
+        ].sort(() => Math.random() - 0.5),
+      });
+    }
+
+    // ============================================
+    // 题型5：判断题（难度较高）
+    // ============================================
+    const isCorrectStatement = Math.random() > 0.5;
+    const wrongDefinition = getRandomItems(allDefinitions, 1, word.definition)[0];
+
+    questions.push({
+      id: `q-${questionIndex++}`,
+      type: 'true-false',
+      question: `"${word.word}" 的意思是"${isCorrectStatement ? word.definition : wrongDefinition}"，对吗？`,
+      wordId: word.id,
+      correctAnswer: isCorrectStatement ? '正确' : '错误',
+      hint: isCorrectStatement ? '' : `正确答案：${word.definition}`,
       options: [
-        { id: `opt-${questionIndex}-a`, text: word.definition, isCorrect: true },
-        { id: `opt-${questionIndex}-b`, text: '干扰选项A', isCorrect: false },
-        { id: `opt-${questionIndex}-c`, text: '干扰选项B', isCorrect: false },
-        { id: `opt-${questionIndex}-d`, text: '干扰选项C', isCorrect: false },
+        { id: `opt-${questionIndex}-a`, text: '正确', isCorrect: isCorrectStatement },
+        { id: `opt-${questionIndex}-b`, text: '错误', isCorrect: !isCorrectStatement },
       ],
     });
   });
 
-  return questions;
+  // 打乱所有题目顺序，避免题型连续出现
+  return questions.sort(() => Math.random() - 0.5);
 }
 
 /**
