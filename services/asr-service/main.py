@@ -53,6 +53,40 @@ app.add_middleware(
 # 初始化语音识别器
 recognizer = SpeechRecognizer()
 
+# 启动时检查环境变量
+@app.on_event("startup")
+async def startup_event():
+    """启动时检查环境变量配置"""
+    logger.info("=" * 60)
+    logger.info("ASR Service Starting...")
+    logger.info("=" * 60)
+
+    # 检查 GROQ_API_KEY
+    groq_key = os.getenv("GROQ_API_KEY")
+    if groq_key:
+        logger.info(f"GROQ_API_KEY: Present (length={len(groq_key)})")
+        if groq_key.startswith("gsk_"):
+            logger.info("  - Format: OK (starts with gsk_)")
+        else:
+            logger.warning(f"  - Format: WARNING - starts with '{groq_key[:4]}'")
+
+        # 检查空格
+        if groq_key != groq_key.strip():
+            logger.warning("  - WARNING: Has leading/trailing whitespace!")
+            logger.warning(f"  - Raw length: {len(groq_key)}, Stripped length: {len(groq_key.strip())}")
+
+        # 检查引号
+        if groq_key.startswith('"') or groq_key.startswith("'"):
+            logger.warning("  - WARNING: Has quotes!")
+
+        # 显示前10个字符和后6个字符
+        logger.info(f"  - Preview: {groq_key[:10]}...{groq_key[-6:]}")
+    else:
+        logger.warning("GROQ_API_KEY: NOT FOUND - Speech recognition will fail!")
+        logger.warning("  Action: Set GROQ_API_KEY in Zeabur environment variables")
+
+    logger.info("=" * 60)
+
 
 @app.get("/", tags=["Health"])
 async def root():
