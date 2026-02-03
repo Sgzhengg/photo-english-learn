@@ -107,6 +107,7 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
 
   // 用于生成干扰选项的其他单词
   const allWords = words.map(w => w.word);
+  const allDefinitions = words.map(w => w.definition);
 
   // 从数组中随机选择n个不重复的元素
   const getRandomItems = <T>(arr: T[], count: number, excludeItem?: T): T[] => {
@@ -125,7 +126,7 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
       question: `"${word.definition}" 的英文单词是？`,
       wordId: word.id,
       correctAnswer: word.word.toLowerCase(),
-      hint: `首字母: ${word.word.charAt(0).toUpperCase()}`,
+      hint: `正确答案：${word.word}`,  // 显示完整单词作为提示
       options: [],
     });
 
@@ -136,15 +137,18 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
     const blankCount = Math.min(2, Math.floor(word.word.length / 3));
     let maskedWord = word.word;
     const blankIndices: number[] = [];
+    const blankPositions: number[] = [];  // 记录挖空的位置
 
     while (blankIndices.length < blankCount) {
       const idx = Math.floor(Math.random() * (word.word.length - 2)) + 1; // 不挖首尾字母
       if (!blankIndices.includes(idx)) {
         blankIndices.push(idx);
+        blankPositions.push(idx);
       }
     }
 
-    blankIndices.forEach(idx => {
+    // 构建挖空后的单词和正确答案
+    blankPositions.forEach(idx => {
       maskedWord = maskedWord.substring(0, idx) + '_' + maskedWord.substring(idx + 1);
     });
 
@@ -153,8 +157,8 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
       type: 'fill-blank',
       question: `请补全单词：${maskedWord}`,
       wordId: word.id,
-      correctAnswer: word.word,
-      hint: word.definition,
+      correctAnswer: word.word,  // 正确答案是完整单词
+      hint: `提示：${word.definition}`,
       options: [],
     });
 
@@ -162,6 +166,19 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
     // 题型3：听音辨义（如果有发音）
     // ============================================
     if (word.phonetic) {
+      // 生成干扰选项（从其他单词中选择）
+      const wrongOptions = getRandomItems(allWords, 3, word.word);
+
+      // 如果干扰选项不够，从其他单词释义生成假单词
+      const getWrongOption = (index: number): string => {
+        if (index < wrongOptions.length) {
+          return wrongOptions[index];
+        }
+        // 使用其他单词的释义生成干扰
+        const wrongDef = getRandomItems(allDefinitions, 1, word.definition)[0] || '未知';
+        return `干扰词${index + 1}`;
+      };
+
       questions.push({
         id: `q-${questionIndex++}`,
         type: 'listening',
@@ -171,9 +188,9 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
         hint: word.definition,
         options: [
           { id: `opt-${questionIndex}-a`, text: word.word, isCorrect: true },
-          { id: `opt-${questionIndex}-b`, text: getRandomItems(allWords, 1, word.word)[0] || '选项B', isCorrect: false },
-          { id: `opt-${questionIndex}-c`, text: getRandomItems(allWords, 1, word.word)[0] || '选项C', isCorrect: false },
-          { id: `opt-${questionIndex}-d`, text: getRandomItems(allWords, 1, word.word)[0] || '选项D', isCorrect: false },
+          { id: `opt-${questionIndex}-b`, text: getWrongOption(0), isCorrect: false },
+          { id: `opt-${questionIndex}-c`, text: getWrongOption(1), isCorrect: false },
+          { id: `opt-${questionIndex}-d`, text: getWrongOption(2), isCorrect: false },
         ].sort(() => Math.random() - 0.5),
       });
     }

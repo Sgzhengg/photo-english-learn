@@ -47,6 +47,7 @@ export function PracticeQuestionView({
   const handleSubmit = () => {
     if (!currentAnswer.trim()) return
 
+    // 验证答案（所有题型都使用完整单词）
     const isCorrect = currentAnswer.toLowerCase().trim() === currentQuestion.correctAnswer.toLowerCase()
 
     setShowFeedback({
