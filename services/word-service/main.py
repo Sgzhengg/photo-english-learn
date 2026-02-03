@@ -360,27 +360,56 @@ async def add_word(
     )
 
 
-@app.get("/{word_id}", response_model=WordResponse, tags=["Words"])
+@app.get("/{user_word_id}", response_model=UserWordResponse, tags=["Words"])
 async def get_word_detail(
-    word_id: int,
+    user_word_id: int,
     current_user: Annotated[User, Depends(get_current_user)],
     db: AsyncSession = Depends(get_async_db)
 ):
     """
-    获取单词详情
+    获取用户生词记录的单词详情
 
-    - **word_id**: 单词 ID
+    - **user_word_id**: 用户生词记录 ID（UserWord.id）
+
+    返回完整的单词信息，包括中文释义、音标等
     """
-    result = await db.execute(select(Word).where(Word.word_id == word_id))
-    word = result.scalar_one_or_none()
+    # 先查找用户生词记录
+    result = await db.execute(
+        select(UserWord).where(
+            and_(
+                UserWord.id == user_word_id,
+                UserWord.user_id == current_user.user_id
+            )
+        )
+    )
+    user_word = result.scalar_one_or_none()
 
-    if not word:
+    if not user_word:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="单词不存在"
+            detail="生词记录不存在"
         )
 
-    return WordResponse.model_validate(word)
+    # 加载关联的单词和标签数据
+    await db.refresh(user_word, ["word", "tag"])
+
+    if not user_word.word:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="单词数据不存在"
+        )
+
+    # 返回完整的用户生词响应
+    return UserWordResponse(
+        id=user_word.id,
+        user_id=user_word.user_id,
+        word_id=user_word.word_id,
+        scene_id=user_word.scene_id,
+        tag_id=user_word.tag_id,
+        created_at=user_word.created_at,
+        word=WordResponse.model_validate(user_word.word),
+        tag={"tag_id": user_word.tag.tag_id, "tag_name": user_word.tag.tag_name, "color": user_word.tag.color} if user_word.tag else None
+    )
 
 
 @app.put("/{word_id}/tag", response_model=dict, tags=["Words"])
