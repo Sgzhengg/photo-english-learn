@@ -65,7 +65,11 @@ async def create_review_record(
     now = utc_now()
 
     # 计算下次复习时间
-    if level < len(EBBINGHAUS_INTERVALS):
+    # level=0 时立即可以复习，后续级别按照艾宾浩斯曲线
+    if level == 0:
+        # 新添加的单词立即可用
+        next_review_time = now
+    elif level < len(EBBINGHAUS_INTERVALS):
         interval_minutes = EBBINGHAUS_INTERVALS[level]
         next_review_time = now + timedelta(minutes=interval_minutes)
     else:

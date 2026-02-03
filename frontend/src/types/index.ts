@@ -18,7 +18,7 @@ export interface User {
   /** 昵称 */
   nickname: string
   /** 头像 URL */
-  avatar?: string
+  avatar_url?: string
   /** 英语水平 */
   englishLevel: 'beginner' | 'intermediate' | 'advanced'
   /** 每日学习目标（单词数） */

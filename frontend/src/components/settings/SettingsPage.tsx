@@ -84,14 +84,13 @@ export function SettingsPage() {
 
     setIsSaving(true);
     try {
-      // Convert image to base64 for preview (in production, would upload to server)
+      // Convert image to base64 for storage
       const reader = new FileReader();
       reader.onloadend = async () => {
         const base64String = reader.result as string;
 
-        // In production, would call API to upload avatar
-        // For now, just update local state for preview
-        await userApi.updateProfile({ avatar: base64String });
+        // Call API to update avatar
+        await userApi.updateProfile({ avatar_url: base64String });
         await refreshUser();
         showSuccess('头像已更新');
       };
@@ -305,8 +304,8 @@ export function SettingsPage() {
             <div className="flex items-center justify-between p-4 border-b border-slate-200 dark:border-slate-700">
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 rounded-full bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center text-white text-xl font-bold overflow-hidden">
-                  {user.avatar ? (
-                    <img src={user.avatar} alt={user.nickname} className="w-full h-full rounded-full object-cover" />
+                  {user.avatar_url ? (
+                    <img src={user.avatar_url} alt={user.nickname} className="w-full h-full rounded-full object-cover" />
                   ) : (
                     <span>{(user.nickname || user.username)[0].toUpperCase()}</span>
                   )}

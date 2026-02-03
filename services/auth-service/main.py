@@ -430,13 +430,14 @@ async def update_user_profile(
     更新用户资料
 
     - **nickname**: 昵称
-    - **avatar**: 头像 URL
+    - **avatar**: 头像 URL（已弃用，请使用 avatar_url）
+    - **avatar_url**: 头像 URL
     """
     import logging
     logger = logging.getLogger(__name__)
 
     nickname = request_data.get("nickname")
-    avatar = request_data.get("avatar")
+    avatar = request_data.get("avatar") or request_data.get("avatar_url")
 
     if nickname:
         current_user.nickname = nickname

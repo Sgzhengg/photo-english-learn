@@ -49,7 +49,7 @@ export function AppShell() {
 
   const userData = user ? {
     name: user.nickname || user.username || 'User',
-    avatarUrl: user.avatar,
+    avatarUrl: user.avatar_url,
   } : undefined;
 
   return (

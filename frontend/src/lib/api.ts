@@ -324,7 +324,7 @@ export const userApi = {
    */
   updateProfile: async (data: {
     nickname?: string;
-    avatar?: string;
+    avatar_url?: string;
   }) => {
     return api.patch<import('@/types').User>('/user/profile', data);
   },
