@@ -44,8 +44,10 @@ export function SingleWordPracticePage() {
       try {
         const result = await vocabularyApi.getWord(wordId);
         if (result.success && result.data) {
-          setWord(result.data as any);
-          generateQuestions(result.data as any);
+          // 后端返回 UserWordResponse，需要从 word 字段获取单词数据
+          const wordData = (result.data as any).word || result.data;
+          setWord(wordData);
+          generateQuestions(wordData);
         } else {
           console.error('Failed to fetch word:', result.error);
           navigate('/app/vocabulary');
