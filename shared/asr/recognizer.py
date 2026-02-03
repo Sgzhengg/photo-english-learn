@@ -7,6 +7,7 @@ import logging
 import httpx
 from typing import Dict, Any, Optional
 import asyncio
+from concurrent.futures import ThreadPoolExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -203,6 +204,86 @@ class SpeechRecognizer:
                 "engine": "groq-whisper",
                 "language": language
             }
+
+        # 首先尝试使用 Groq 官方 SDK（更可靠的认证）
+        try:
+            result = await self._recognize_with_groq_sdk(audio_data, language)
+            if result:
+                return result
+        except Exception as e:
+            logger.warning(f"Groq SDK method failed: {e}, trying httpx fallback")
+
+        # 如果 SDK 方法失败，回退到 httpx
+        return await self._recognize_with_groq_httpx(audio_data, language)
+
+    async def _recognize_with_groq_sdk(
+        self,
+        audio_data: bytes,
+        language: str
+    ) -> Dict[str, Any]:
+        """使用 Groq 官方 SDK 识别（推荐，认证更可靠）"""
+        try:
+            # 导入 Groq SDK
+            from groq import Groq
+
+            # 在线程池中运行同步代码
+            loop = asyncio.get_event_loop()
+            with ThreadPoolExecutor() as executor:
+                result = await loop.run_in_executor(
+                    executor,
+                    lambda: self._groq_transcribe_sync(audio_data, language)
+                )
+            return result
+
+        except ImportError:
+            logger.warning("Groq SDK not installed, falling back to httpx")
+            return None
+        except Exception as e:
+            logger.error(f"Groq SDK error: {e}")
+            return None
+
+    def _groq_transcribe_sync(self, audio_data: bytes, language: str) -> Dict[str, Any]:
+        """Groq SDK 同步转录"""
+        from groq import Groq
+
+        # 保存音频到临时文件
+        with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
+            tmp_file.write(audio_data)
+            tmp_file_path = tmp_file.name
+
+        try:
+            # 创建 Groq 客户端
+            client = Groq(api_key=self.groq_api_key)
+
+            # 打开音频文件并转录
+            with open(tmp_file_path, "rb") as file:
+                transcription = client.audio.transcriptions.create(
+                    file=(tmp_file_path, file),
+                    model="whisper-large-v3-turbo",
+                    language=language.split("-")[0],
+                    response_format="verbose_json"
+                )
+
+            return {
+                "text": transcription.text,
+                "confidence": 0.95,
+                "duration": getattr(transcription, 'duration', 0),
+                "engine": "groq-whisper-sdk",
+                "language": language
+            }
+
+        finally:
+            # 清理临时文件
+            try:
+                os.unlink(tmp_file_path)
+            except:
+                pass
+
+    async def _recognize_with_groq_httpx(
+        self,
+        audio_data: bytes,
+        language: str
+    ) -> Dict[str, Any]:
 
         try:
             # 保存音频到临时文件
