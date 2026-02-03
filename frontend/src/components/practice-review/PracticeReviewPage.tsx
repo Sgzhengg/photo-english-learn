@@ -223,8 +223,8 @@ export function PracticeReviewPage() {
   };
 
   const handleViewProgressStats = () => {
-    // Navigate to progress dashboard page
-    window.location.href = '/app/progress';
+    // Navigate to progress dashboard page using React Router
+    navigate('/app/progress');
   };
 
   const handleBackToHome = () => {

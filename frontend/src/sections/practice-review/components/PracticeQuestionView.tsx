@@ -80,7 +80,6 @@ export function PracticeQuestionView({
       onStopAudio()
     } else {
       // Play audio using Web Speech API
-      // Use the correct answer as the word to speak
       const wordToSpeak = currentQuestion.correctAnswer || ''
 
       if (wordToSpeak && 'speechSynthesis' in window) {
@@ -89,7 +88,7 @@ export function PracticeQuestionView({
 
         const utterance = new SpeechSynthesisUtterance(wordToSpeak)
         utterance.lang = 'en-US'
-        utterance.rate = 0.8  // Slightly slower for dictation
+        utterance.rate = 1.0  // Normal speed
         utterance.pitch = 1
         utterance.volume = 1
 
@@ -109,10 +108,8 @@ export function PracticeQuestionView({
 
         speechRef.current = utterance
 
-        // Wait a small delay to ensure voices are loaded
-        setTimeout(() => {
-          window.speechSynthesis.speak(utterance)
-        }, 100)
+        // Speak immediately without delay
+        window.speechSynthesis.speak(utterance)
 
         onPlayAudio(currentQuestion.audioUrl || '')
       }

@@ -182,16 +182,41 @@ export function generatePracticeQuestions(words: WordInTask[]): PracticeQuestion
   return questions.sort(() => Math.random() - 0.5);
 }
 
+// 艾宾浩斯遗忘曲线间隔（分钟）
+const EBBINGHAUS_INTERVALS = [
+  5,          // 5 分钟后
+  30,         // 30 分钟后
+  720,        // 12 小时后
+  1440,       // 1 天后
+  2880,       // 2 天后
+  4320,       // 3 天后
+  10080,      // 7 天后
+  20160,      // 14 天后
+  43200,      // 30 天后
+];
+
 /**
  * 将后端复习记录转换为前端复习计划项
+ * 使用艾宾浩斯遗忘曲线间隔
  */
 export function adaptReviewRecordToScheduleItem(record: BackendReviewRecord): ReviewScheduleItem {
+  // 艾宾浩斯间隔（分钟转天数）
+  const intervalMinutes = record.level < EBBINGHAUS_INTERVALS.length
+    ? EBBINGHAUS_INTERVALS[record.level]
+    : EBBINGHAUS_INTERVALS[EBBINGHAUS_INTERVALS.length - 1];
+
+  const intervalDays = Math.floor(intervalMinutes / 1440); // 转换为天数
+
+  // 根据艾宾浩斯曲线计算难度因子（简化版本）
+  // level越高，记忆越牢固，easeFactor越大
+  const easeFactor = 1.3 + (record.level * 0.15); // 1.3-2.65范围
+
   return {
     wordId: String(record.word_id),
     word: record.word?.english_word || '',
     nextReviewDate: record.next_review_time,
-    intervalDays: Math.floor(record.level * 1.5),
-    easeFactor: 2.5 + record.level * 0.1,
+    intervalDays,
+    easeFactor: Math.min(easeFactor, 3.0), // 最大不超过3.0
     reviewCount: record.total_correct + record.total_wrong,
   };
 }

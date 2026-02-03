@@ -76,10 +76,13 @@ export function PhotoCapturePage() {
     const word = currentPhoto?.recognizedWords.find(w => w.id === wordId);
     if (!word) return;
 
+    // Cancel any ongoing speech first
+    window.speechSynthesis.cancel();
+
     // Use Web Speech API
     const utterance = new SpeechSynthesisUtterance(word.word);
     utterance.lang = 'en-US';
-    utterance.rate = 0.9;
+    utterance.rate = 1.0;  // Normal speed
     window.speechSynthesis.speak(utterance);
   };
 

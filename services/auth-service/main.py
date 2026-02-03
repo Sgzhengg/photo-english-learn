@@ -449,10 +449,24 @@ async def update_user_profile(
 
     logger.info(f"更新用户资料: {current_user.username}")
 
-    return success_response(data={
-        "message": "资料更新成功",
-        "user": UserResponse.model_validate(current_user).model_dump()
-    })
+    # 直接返回用户对象，不要嵌套在 data.user 中
+    user_data = UserResponse.model_validate(current_user).model_dump()
+
+    # 添加前端的字段映射
+    user_data["id"] = str(user_data.pop("user_id"))
+    user_data["username"] = user_data.get("username", "")
+    user_data["email"] = user_data.get("email", "")
+    user_data["nickname"] = user_data.get("nickname", "")
+    user_data["avatar_url"] = user_data.get("avatar_url")
+    user_data["phone"] = None  # User模型没有phone字段
+    user_data["englishLevel"] = "beginner"  # 默认值
+    user_data["dailyGoal"] = "20"  # 默认值
+    user_data["status"] = "active"
+    user_data["createdAt"] = user_data.get("created_at", "").isoformat() if user_data.get("created_at") else ""
+    user_data["lastLoginAt"] = user_data.get("created_at", "").isoformat() if user_data.get("created_at") else ""
+    user_data["hasCompletedOnboarding"] = False  # 默认值
+
+    return success_response(data=user_data)
 
 
 @app.post("/user/change-password", tags=["User"])

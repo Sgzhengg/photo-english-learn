@@ -133,12 +133,52 @@ export function ReviewSchedule({ reviewSchedule, onBackToHome }: ReviewScheduleP
           <div className="flex gap-3">
             <Info className="w-5 h-5 text-blue-600 dark:text-blue-400 flex-shrink-0 mt-0.5" />
             <div className="flex-1">
-              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-1" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                关于间隔重复算法（SM-2）
+              <h3 className="text-sm font-semibold text-blue-900 dark:text-blue-300 mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+                艾宾浩斯遗忘曲线复习计划
               </h3>
-              <p className="text-xs text-blue-700 dark:text-blue-400 leading-relaxed" style={{ fontFamily: 'Inter, sans-serif' }}>
-                复习间隔根据您的答题表现动态调整。难度因子越高，下次复习间隔越长。答对会增加间隔，答错会重置间隔。
+              <p className="text-xs text-blue-700 dark:text-blue-400 leading-relaxed mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+                基于艾宾浩斯遗忘曲线理论，在遗忘临界点进行复习，提高记忆效率。
               </p>
+              <div className="grid grid-cols-5 gap-1 mt-2">
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">5分钟</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第1次</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">30分钟</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第2次</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">12小时</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第3次</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">1天</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第4次</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">2天</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第5次</div>
+                </div>
+              </div>
+              <div className="grid grid-cols-4 gap-1 mt-1">
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">3天</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第6次</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">7天</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第7次</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">14天</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第8次</div>
+                </div>
+                <div className="text-center">
+                  <div className="text-[10px] font-semibold text-blue-900 dark:text-blue-300">30天</div>
+                  <div className="text-[9px] text-blue-600 dark:text-blue-400">第9次</div>
+                </div>
+              </div>
             </div>
           </div>
         </div>
