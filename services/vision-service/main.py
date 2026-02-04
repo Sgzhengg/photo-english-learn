@@ -1,5 +1,5 @@
 """
-视觉服务 - 使用 DeepInfra Llama 3.2 Vision
+视觉服务 - 使用 DeepInfra Gemma 3 Vision
 无需本地模型，直接调用云端 API（在中国可访问）
 """
 import sys
@@ -23,9 +23,9 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 # 初始化 FastAPI 应用
 app = FastAPI(
-    title="Vision Service (DeepInfra Llama 3.2 Vision)",
-    description="视觉服务 - 直接调用 DeepInfra Llama 3.2 Vision（高速稳定）",
-    version="3.0.0"
+    title="Vision Service (DeepInfra Gemma 3 Vision)",
+    description="视觉服务 - 直接调用 DeepInfra Gemma 3 Vision（高速稳定，性价比高）",
+    version="3.1.0"
 )  
 # CORS 配置  
 app.add_middleware(  
@@ -61,28 +61,30 @@ client = AsyncOpenAI(
 async def root():
     """健康检查"""
     return success_response(data={
-        "message": "Vision Service is running (DeepInfra Llama 3.2 Vision)",
+        "message": "Vision Service is running (DeepInfra Gemma 3 Vision)",
         "service": "vision",
         "provider": "DeepInfra",
-        "model": "meta-llama/Llama-3.2-90B-Vision-Instruct"
+        "model": "google/gemma-3-12b-it"
     })  
 @app.post("/photo/recognize", tags=["Vision"])
 async def recognize_photo(file: UploadFile = UploadFile(...)):
     """
-    拍照识别单词（使用 DeepInfra Llama 3.2 Vision）
+    拍照识别单词（使用 DeepInfra Gemma 3 Vision）
     - **file**: 上传的图片文件
     返回：
     - 识别出的单词列表
     - 场景描述（英文句子）
     - 场景翻译（中文翻译）
     限流：每个用户/IP 每分钟最多 30 次
-    模型：meta-llama/Llama-3.2-90B-Vision-Instruct（Llama 3.2 90B，高速稳定）
+    模型：google/gemma-3-12b-it（Gemma 3 12B，性价比高，价格低）
+    备选：meta-llama/Llama-3.2-11B-Vision-Instruct
     注：DeepInfra 提供近乎免费的高速推理服务
     """
 
-    # 定义模型列表（使用 DeepInfra 的高速稳定模型）
+    # 定义模型列表（使用 DeepInfra 可用的高性价比模型）
     MODELS = [
-        "meta-llama/Llama-3.2-90B-Vision-Instruct",  # Llama 3.2 90B（高速稳定）
+        "google/gemma-3-12b-it",  # Gemma 3 12B（性价比高，价格低）
+        "meta-llama/Llama-3.2-11B-Vision-Instruct",  # Llama 3.2 11B（备选）
     ]  
     try:  
         # 读取图片数据  
