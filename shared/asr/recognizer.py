@@ -17,11 +17,50 @@ class SpeechRecognizer:
 
     def __init__(self):
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
-        self.groq_api_key = os.getenv("GROQ_API_KEY")
+        self.groq_api_key = self._clean_api_key(os.getenv("GROQ_API_KEY"))
         self.azure_speech_key = os.getenv("AZURE_SPEECH_KEY")
         self.azure_speech_region = os.getenv("AZURE_SPEECH_REGION", "eastasia")
         self.baidu_api_key = os.getenv("BAIDU_API_KEY")
         self.baidu_secret_key = os.getenv("BAIDU_SECRET_KEY")
+
+        # 记录 API Key 状态
+        if self.groq_api_key:
+            logger.info(f"Groq API Key loaded: {self.groq_api_key[:10]}...{self.groq_api_key[-6:]}")
+        else:
+            logger.warning("Groq API Key not configured")
+
+    def _clean_api_key(self, api_key: Optional[str]) -> Optional[str]:
+        """
+        清理 API Key，去除引号和空格
+
+        Args:
+            api_key: 原始 API Key
+
+        Returns:
+            清理后的 API Key，或 None（如果输入为 None）
+        """
+        if not api_key:
+            return None
+
+        # 去除首尾空格
+        cleaned = api_key.strip()
+
+        # 去除首尾引号（单引号或双引号）
+        if cleaned.startswith('"') and cleaned.endswith('"'):
+            cleaned = cleaned[1:-1]
+        elif cleaned.startswith("'") and cleaned.endswith("'"):
+            cleaned = cleaned[1:-1]
+
+        # 再次去除可能的空格
+        cleaned = cleaned.strip()
+
+        # 如果清理后不同，记录警告
+        if cleaned != api_key:
+            logger.warning(f"API Key was cleaned (quotes/spaces removed)")
+            logger.warning(f"  Original: {api_key[:20]}...")
+            logger.warning(f"  Cleaned:  {cleaned[:20]}...")
+
+        return cleaned
 
     async def get_available_engines(self) -> list:
         """获取可用的识别引擎"""
@@ -245,6 +284,7 @@ class SpeechRecognizer:
     def _groq_transcribe_sync(self, audio_data: bytes, language: str) -> Dict[str, Any]:
         """Groq SDK 同步转录"""
         from groq import Groq
+        import groq
 
         # 保存音频到临时文件
         with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
@@ -252,6 +292,8 @@ class SpeechRecognizer:
             tmp_file_path = tmp_file.name
 
         try:
+            logger.info(f"Groq SDK: Attempting transcription with model=whisper-large-v3-turbo, language={language.split('-')[0]}")
+
             # 创建 Groq 客户端
             client = Groq(api_key=self.groq_api_key)
 
@@ -264,6 +306,7 @@ class SpeechRecognizer:
                     response_format="verbose_json"
                 )
 
+            logger.info(f"Groq SDK: Transcription successful, text length={len(transcription.text)}")
             return {
                 "text": transcription.text,
                 "confidence": 0.95,
@@ -272,6 +315,18 @@ class SpeechRecognizer:
                 "language": language
             }
 
+        except groq.AuthenticationError as e:
+            logger.error("=" * 60)
+            logger.error("Groq SDK: Authentication Error")
+            logger.error("=" * 60)
+            logger.error(f"Error: {e}")
+            logger.error(f"API Key (first 10): {self.groq_api_key[:10] if self.groq_api_key else 'None'}...{self.groq_api_key[-6:] if self.groq_api_key else 'None'}")
+            logger.error(f"API Key length: {len(self.groq_api_key) if self.groq_api_key else 0}")
+            logger.error("=" * 60)
+            raise
+        except Exception as e:
+            logger.error(f"Groq SDK: Unexpected error: {e}")
+            raise
         finally:
             # 清理临时文件
             try:
@@ -335,10 +390,15 @@ class SpeechRecognizer:
             if e.response.status_code == 403:
                 # 读取详细错误信息
                 error_detail = e.response.text[:500] if e.response.text else "No detail"
-                logger.warning(f"Groq API returned 403 Forbidden")
-                logger.warning(f"Response: {error_detail}")
-                logger.warning(f"API Key (first 10): {self.groq_api_key[:10]}...{self.groq_api_key[-6:] if self.groq_api_key else 'None'}")
-                logger.warning(f"Model: whisper-large-v3-turbo")
+                logger.error("=" * 60)
+                logger.error("Groq API returned 403 Forbidden")
+                logger.error("=" * 60)
+                logger.error(f"Response: {error_detail}")
+                logger.error(f"API Key (first 10): {self.groq_api_key[:10] if self.groq_api_key else 'None'}...{self.groq_api_key[-6:] if self.groq_api_key else 'None'}")
+                logger.error(f"API Key length: {len(self.groq_api_key) if self.groq_api_key else 0}")
+                logger.error(f"Model: whisper-large-v3-turbo")
+                logger.error(f"Endpoint: https://api.groq.com/openai/v1/audio/transcriptions")
+                logger.error("=" * 60)
                 # API密钥无效或没有权限，返回空文本和特殊标记
                 return {
                     "text": "",
