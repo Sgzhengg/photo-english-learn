@@ -1,6 +1,8 @@
 # Vision Service - 轻量级依赖列表（使用 OpenRouter Qwen 2.5 VL）
 # 无需本地 ML 模型，直接调用云端 API（在中国可访问）
-# 优化版本：移除不需要的数据库、缓存、认证依赖
+#
+# 优化说明：已移除 shared/utils/__init__.py 的自动导入，
+# vision-service 不再需要数据库和认证依赖
 
 # 基础框架
 fastapi==0.115.0
