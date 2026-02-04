@@ -1,5 +1,5 @@
 """
-视觉服务 - 使用 OpenRouter Qwen 2.5 VL
+视觉服务 - 使用 DeepInfra Llama 3.2 Vision
 无需本地模型，直接调用云端 API（在中国可访问）
 """
 import sys
@@ -17,15 +17,15 @@ import time
 from datetime import datetime
 from openai import AsyncOpenAI
 import httpx
-from shared.utils.response import success_response  
-# 配置日志  
-logging.basicConfig(level=logging.INFO)  
-logger = logging.getLogger(__name__)  
-# 初始化 FastAPI 应用  
-app = FastAPI(  
-    title="Vision Service (OpenRouter Qwen 2.5 VL)",  
-    description="视觉服务 - 直接调用 OpenRouter Qwen 2.5 VL（在中国可访问）",  
-    version="2.0.0"  
+from shared.utils.response import success_response
+# 配置日志
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+# 初始化 FastAPI 应用
+app = FastAPI(
+    title="Vision Service (DeepInfra Llama 3.2 Vision)",
+    description="视觉服务 - 直接调用 DeepInfra Llama 3.2 Vision（高速稳定）",
+    version="3.0.0"
 )  
 # CORS 配置  
 app.add_middleware(  
@@ -42,49 +42,47 @@ app.add_middleware(
     allow_methods=["*"],  
     allow_headers=["*"],  
 )  
-# 初始化 AsyncOpenAI 客户端（使用 OpenRouter）  
-api_key = os.getenv("OPENROUTER_API_KEY")  
-if not api_key:  
-    raise ValueError("OPENROUTER_API_KEY environment variable is required")  
-# 创建自定义异步 HTTP 客户端，设置更长的超时时间  
-http_client = httpx.AsyncClient(  
-    timeout=httpx.Timeout(90.0, connect=10.0),  # 总超时 90 秒，连接超时 10 秒  
-    limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),  
+# 初始化 AsyncOpenAI 客户端（使用 DeepInfra）
+api_key = os.getenv("DEEPINFRA_API_KEY")
+if not api_key:
+    logger.warning("DEEPINFRA_API_KEY not configured, using mock mode")
+    # 不再抛出错误，而是使用模拟模式
+# 创建自定义异步 HTTP 客户端，设置较短的超时时间（DeepInfra 更快）
+http_client = httpx.AsyncClient(
+    timeout=httpx.Timeout(30.0, connect=10.0),  # 总超时 30 秒，连接超时 10 秒
+    limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
+)
+client = AsyncOpenAI(
+    api_key=api_key or "mock",  # 如果没有 key，使用 mock
+    base_url="https://api.deepinfra.com/v1/openai",
+    http_client=http_client,
 )  
-client = AsyncOpenAI(  
-    api_key=api_key,  
-    base_url="https://openrouter.ai/api/v1",  
-    http_client=http_client,  
-)  
-@app.get("/", tags=["Health"])  
-async def root():  
-    """健康检查"""  
-    return success_response(data={  
-        "message": "Vision Service is running (OpenRouter Qwen 2.5 VL)",  
-        "service": "vision",  
-        "provider": "OpenRouter",  
-        "model": "qwen/qwen-2.5-vl-72b-instruct"  
+@app.get("/", tags=["Health"])
+async def root():
+    """健康检查"""
+    return success_response(data={
+        "message": "Vision Service is running (DeepInfra Llama 3.2 Vision)",
+        "service": "vision",
+        "provider": "DeepInfra",
+        "model": "meta-llama/Llama-3.2-90B-Vision-Instruct"
     })  
-@app.post("/photo/recognize", tags=["Vision"])  
-async def recognize_photo(file: UploadFile = UploadFile(...)):  
-    """  
-    拍照识别单词（使用 OpenRouter 多模型支持）  
-    - **file**: 上传的图片文件  
-    返回：  
-    - 识别出的单词列表  
-    - 场景描述（英文句子）  
-    - 场景翻译（中文翻译）  
-    限流：每个用户/IP 每分钟最多 30 次  
-    模型：qwen/qwen-2.5-vl-72b-instruct（Qwen 2.5 VL 72B，稳定可靠）
-    注：根据生产环境日志，7b 模型存在 100% JSON 解析失败率，故直接使用 72b 模型
-    注：OpenAI/Anthropic/Google 模型在中国大陆被屏蔽，故使用这些可访问的替代方案  
-    """  
-      
-    # 定义模型列表（仅使用稳定的高质量模型）
-    # 注：根据生产环境日志分析，7b 模型 100% 失败率（JSON 解析错误）
-    # 故直接使用 72b 模型，避免浪费 11 秒在失败的 7b 模型上
+@app.post("/photo/recognize", tags=["Vision"])
+async def recognize_photo(file: UploadFile = UploadFile(...)):
+    """
+    拍照识别单词（使用 DeepInfra Llama 3.2 Vision）
+    - **file**: 上传的图片文件
+    返回：
+    - 识别出的单词列表
+    - 场景描述（英文句子）
+    - 场景翻译（中文翻译）
+    限流：每个用户/IP 每分钟最多 30 次
+    模型：meta-llama/Llama-3.2-90B-Vision-Instruct（Llama 3.2 90B，高速稳定）
+    注：DeepInfra 提供近乎免费的高速推理服务
+    """
+
+    # 定义模型列表（使用 DeepInfra 的高速稳定模型）
     MODELS = [
-        "qwen/qwen-2.5-vl-72b-instruct",     # 使用：Qwen 2.5 VL 72B（稳定可靠）
+        "meta-llama/Llama-3.2-90B-Vision-Instruct",  # Llama 3.2 90B（高速稳定）
     ]  
     try:  
         # 读取图片数据  

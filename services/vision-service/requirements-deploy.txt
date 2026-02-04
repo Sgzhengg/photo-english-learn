@@ -1,5 +1,5 @@
-# Vision Service - 轻量级依赖列表（使用 OpenRouter Qwen 2.5 VL）
-# 无需本地 ML 模型，直接调用云端 API（在中国可访问）
+# Vision Service - 轻量级依赖列表（使用 DeepInfra Llama 3.2 Vision）
+# 无需本地 ML 模型，直接调用云端 API（高速稳定）
 #
 # 优化说明：已移除 shared/utils/__init__.py 的自动导入，
 # vision-service 不再需要数据库和认证依赖
@@ -15,8 +15,8 @@ python-dotenv==1.0.1
 python-multipart==0.0.12
 aiofiles==24.1.0
 
-# HTTP 客户端（用于 OpenRouter API）
+# HTTP 客户端（用于 DeepInfra API）
 httpx==0.27.2
 
-# OpenAI SDK（用于调用 OpenRouter Qwen 2.5 VL）
+# OpenAI SDK（用于调用 DeepInfra Llama 3.2 Vision）
 openai>=1.0.0
