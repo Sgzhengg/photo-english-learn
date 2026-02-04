@@ -66,7 +66,7 @@ async def root():
         "message": "Vision Service is running (OpenRouter Qwen 2.5 VL)",  
         "service": "vision",  
         "provider": "OpenRouter",  
-        "model": "qwen/qwen-2.5-vl-7b-instruct"  
+        "model": "qwen/qwen-2.5-vl-72b-instruct"  
     })  
 @app.post("/photo/recognize", tags=["Vision"])  
 async def recognize_photo(file: UploadFile = UploadFile(...)):  
@@ -78,16 +78,16 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
     - 场景描述（英文句子）  
     - 场景翻译（中文翻译）  
     限流：每个用户/IP 每分钟最多 30 次  
-    模型优先级（按顺序尝试）：  
-    1. qwen/qwen-2.5-vl-7b-instruct（优先：Qwen 2.5 VL 7B，快速、便宜、够用）  
-    2. qwen/qwen-2.5-vl-72b-instruct（备选：Qwen 2.5 VL 72B，高质量）  
+    模型：qwen/qwen-2.5-vl-72b-instruct（Qwen 2.5 VL 72B，稳定可靠）
+    注：根据生产环境日志，7b 模型存在 100% JSON 解析失败率，故直接使用 72b 模型
     注：OpenAI/Anthropic/Google 模型在中国大陆被屏蔽，故使用这些可访问的替代方案  
     """  
       
-    # 定义模型列表（按优先级排序）  
-    MODELS = [  
-        "qwen/qwen-2.5-vl-7b-instruct",      # 优先：Qwen 2.5 VL 7B  
-        "qwen/qwen-2.5-vl-72b-instruct",     # 备选：Qwen 2.5 VL 72B  
+    # 定义模型列表（仅使用稳定的高质量模型）
+    # 注：根据生产环境日志分析，7b 模型 100% 失败率（JSON 解析错误）
+    # 故直接使用 72b 模型，避免浪费 11 秒在失败的 7b 模型上
+    MODELS = [
+        "qwen/qwen-2.5-vl-72b-instruct",     # 使用：Qwen 2.5 VL 72B（稳定可靠）
     ]  
     try:  
         # 读取图片数据  
