@@ -106,6 +106,7 @@ async def recognize_audio(
 
     支持的引擎：
     - groq-whisper: Groq Whisper API（推荐，超高速，有免费额度）
+    - deepinfra: DeepInfra Whisper API（高速，有免费额度）
     - openai-whisper: OpenAI Whisper API（准确度高，需要付费）
     - azure: Azure Speech Service
     - baidu: 百度语音识别（需要配置 API key）
@@ -251,7 +252,7 @@ async def get_config(
     """
     return success_response(data={
         "supported_languages": ["en-US", "en-GB", "zh-CN"],
-        "supported_engines": ["groq-whisper", "openai-whisper", "azure", "baidu"],
+        "supported_engines": ["groq-whisper", "deepinfra", "openai-whisper", "azure", "baidu"],
         "default_engine": "groq-whisper",
         "default_language": "en-US",
         "max_audio_size": 25 * 1024 * 1024,  # 25MB

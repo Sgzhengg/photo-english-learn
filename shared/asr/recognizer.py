@@ -18,6 +18,7 @@ class SpeechRecognizer:
     def __init__(self):
         self.openai_api_key = os.getenv("OPENAI_API_KEY")
         self.groq_api_key = self._clean_api_key(os.getenv("GROQ_API_KEY"))
+        self.deepinfra_api_key = os.getenv("DEEPINFRA_API_KEY")
         self.azure_speech_key = os.getenv("AZURE_SPEECH_KEY")
         self.azure_speech_region = os.getenv("AZURE_SPEECH_REGION", "eastasia")
         self.baidu_api_key = os.getenv("BAIDU_API_KEY")
@@ -28,6 +29,11 @@ class SpeechRecognizer:
             logger.info(f"Groq API Key loaded: {self.groq_api_key[:10]}...{self.groq_api_key[-6:]}")
         else:
             logger.warning("Groq API Key not configured")
+
+        if self.deepinfra_api_key:
+            logger.info(f"DeepInfra API Key loaded: {self.deepinfra_api_key[:10]}...{self.deepinfra_api_key[-6:]}")
+        else:
+            logger.info("DeepInfra API Key not configured")
 
     def _clean_api_key(self, api_key: Optional[str]) -> Optional[str]:
         """
@@ -75,6 +81,15 @@ class SpeechRecognizer:
                 "available": True
             })
 
+        # DeepInfra Whisper (高速，有免费额度)
+        if self.deepinfra_api_key:
+            engines.append({
+                "id": "deepinfra",
+                "name": "DeepInfra Whisper",
+                "description": "高速语音识别，有免费额度",
+                "available": True
+            })
+
         # OpenAI Whisper
         if self.openai_api_key:
             engines.append({
@@ -102,12 +117,12 @@ class SpeechRecognizer:
                 "available": True
             })
 
-        # 如果没有配置任何 API，添加默认的 Groq 引擎
+        # 如果没有配置任何 API，添加默认的 DeepInfra 引擎
         if not engines:
             engines.append({
-                "id": "groq-whisper",
-                "name": "Groq Whisper (推荐)",
-                "description": "超高速语音识别，在 https://groq.com 获取免费 API Key",
+                "id": "deepinfra",
+                "name": "DeepInfra Whisper (推荐)",
+                "description": "高速语音识别，在 https://deepinfra.com 获取免费 API Key",
                 "available": False
             })
 
@@ -132,6 +147,8 @@ class SpeechRecognizer:
         """
         if engine == "groq-whisper":
             return await self._recognize_with_groq(audio_data, language)
+        elif engine == "deepinfra":
+            return await self._recognize_with_deepinfra(audio_data, language)
         elif engine == "openai-whisper":
             return await self._recognize_with_whisper(audio_data, language)
         elif engine == "azure":
@@ -476,6 +493,120 @@ class SpeechRecognizer:
             "engine": "baidu",
             "language": language
         }
+
+    async def _recognize_with_deepinfra(
+        self,
+        audio_data: bytes,
+        language: str
+    ) -> Dict[str, Any]:
+        """使用 DeepInfra Whisper API 识别"""
+        if not self.deepinfra_api_key:
+            # 返回模拟数据用于测试
+            logger.warning("DeepInfra API key not configured, returning mock data")
+            return {
+                "text": "I'm working on my laptop while enjoying a fresh cup of coffee.",
+                "confidence": 0.95,
+                "engine": "deepinfra",
+                "language": language
+            }
+
+        try:
+            # 保存音频到临时文件
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".mp3") as tmp_file:
+                tmp_file.write(audio_data)
+                tmp_file_path = tmp_file.name
+
+            try:
+                # 调用 DeepInfra Whisper API (兼容 OpenAI 格式)
+                async with httpx.AsyncClient(timeout=60.0) as client:
+                    files = {
+                        "file": (os.path.basename(tmp_file_path), audio_data, "audio/mpeg")
+                    }
+                    data = {
+                        "model": "openai/whisper-large-v3-turbo",
+                        "language": language.split("-")[0],  # en-US -> en
+                        "response_format": "verbose_json"
+                    }
+
+                    logger.info(f"DeepInfra: Sending transcription request with model=whisper-large-v3-turbo, language={language.split('-')[0]}")
+
+                    response = await client.post(
+                        "https://api.deepinfra.com/v1/audio/transcriptions",
+                        headers={
+                            "Authorization": f"Bearer {self.deepinfra_api_key}"
+                        },
+                        files=files,
+                        data=data,
+                        timeout=60.0
+                    )
+                    response.raise_for_status()
+
+                    result = response.json()
+                    logger.info(f"DeepInfra: Transcription successful, text length={len(result.get('text', ''))}")
+
+                    return {
+                        "text": result.get("text", ""),
+                        "confidence": 0.95,  # Whisper 不直接返回置信度
+                        "duration": result.get("duration", 0),
+                        "engine": "deepinfra",
+                        "language": language
+                    }
+
+            finally:
+                # 清理临时文件
+                try:
+                    os.unlink(tmp_file_path)
+                except:
+                    pass
+
+        except httpx.HTTPStatusError as e:
+            if e.response.status_code == 401:
+                logger.error("=" * 60)
+                logger.error("DeepInfra API returned 401 Unauthorized")
+                logger.error("=" * 60)
+                logger.error(f"Response: {e.response.text[:500] if e.response.text else 'No detail'}")
+                logger.error(f"API Key (first 10): {self.deepinfra_api_key[:10] if self.deepinfra_api_key else 'None'}...{self.deepinfra_api_key[-6:] if self.deepinfra_api_key else 'None'}")
+                logger.error("=" * 60)
+                return {
+                    "text": "",
+                    "confidence": 0.0,
+                    "engine": "deepinfra-error",
+                    "language": language,
+                    "mock": True,
+                    "error": "API_KEY_INVALID",
+                    "error_message": "DeepInfra API key not configured or invalid. Please set DEEPINFRA_API_KEY environment variable."
+                }
+            elif e.response.status_code == 403:
+                logger.error("=" * 60)
+                logger.error("DeepInfra API returned 403 Forbidden")
+                logger.error("=" * 60)
+                logger.error(f"Response: {e.response.text[:500] if e.response.text else 'No detail'}")
+                logger.error("=" * 60)
+                return {
+                    "text": "",
+                    "confidence": 0.0,
+                    "engine": "deepinfra-error",
+                    "language": language,
+                    "mock": True,
+                    "error": "API_KEY_FORBIDDEN",
+                    "error_message": "DeepInfra API key does not have permission to access this resource."
+                }
+            else:
+                logger.error(f"DeepInfra Whisper API HTTP error: {e}")
+                raise
+        except Exception as e:
+            logger.error(f"DeepInfra Whisper API error: {e}")
+            # 其他错误也返回空文本和错误信息
+            logger.warning("Falling back to empty result due to API error")
+            return {
+                "text": "",
+                "confidence": 0.0,
+                "engine": "deepinfra-error",
+                "language": language,
+                "mock": True,
+                "error": "API_ERROR",
+                "error_message": f"Speech recognition error: {str(e)}"
+            }
 
     def calculate_pronunciation_score(
         self,
