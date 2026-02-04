@@ -1,18 +1,15 @@
-# Vision Service - Zeabur Dockerfile
+# Vision Service - Zeabur Dockerfile (Optimized)
 FROM python:3.11-slim
+
+LABEL "language"="python"
+LABEL "framework"="fastapi"
 
 WORKDIR /app
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    libgomp1 \
-    && rm -rf /var/lib/apt/lists/*
-
-# 复制 requirements 并安装
-COPY services/vision-service/requirements.txt .
+# 复制优化的 requirements 并安装（分层缓存）
+COPY services/vision-service/requirements-deploy.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt
+    pip install --no-cache-dir -r requirements-deploy.txt
 
 # 复制所有代码（包括 shared）
 COPY shared ./shared/

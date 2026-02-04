@@ -1,21 +1,13 @@
 # Vision Service - 轻量级依赖列表（使用 OpenRouter Qwen 2.5 VL）
 # 无需本地 ML 模型，直接调用云端 API（在中国可访问）
+# 优化版本：移除不需要的数据库、缓存、认证依赖
 
 # 基础框架
 fastapi==0.115.0
-uvicorn[standard]==0.32.0
+uvicorn==0.32.0
 pydantic==2.9.2
 pydantic-settings==2.6.0
 python-dotenv==1.0.1
-
-# 数据库
-sqlalchemy==2.0.35
-asyncpg==0.29.0
-psycopg2-binary==2.9.9
-
-# 认证
-python-jose[cryptography]==3.3.0
-passlib[bcrypt]==1.7.4
 
 # 文件处理
 python-multipart==0.0.12
@@ -23,9 +15,6 @@ aiofiles==24.1.0
 
 # HTTP 客户端（用于 OpenRouter API）
 httpx==0.27.2
-
-# Redis
-redis==5.2.0
 
 # OpenAI SDK（用于调用 OpenRouter Qwen 2.5 VL）
 openai>=1.0.0

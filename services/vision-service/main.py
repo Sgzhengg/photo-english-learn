@@ -1,26 +1,23 @@
-"""  
-视觉服务 - 使用 OpenRouter Qwen 2.5 VL  
-无需本地模型，直接调用云端 API（在中国可访问）  
-"""  
-import sys  
-from pathlib import Path  
-# 添加项目根目录到 Python 路径  
-sys.path.insert(0, str(Path(__file__).parent.parent))  
-from fastapi import FastAPI, Depends, HTTPException, UploadFile  
-from fastapi.middleware.cors import CORSMiddleware  
-from sqlalchemy.ext.asyncio import AsyncSession  
-from typing import Dict, Any  
-import base64  
-import os  
-import json  
-import logging  
-import time  
-from datetime import datetime  
-from openai import AsyncOpenAI  
-import httpx  
-from shared.database.database import get_async_db  
+"""
+视觉服务 - 使用 OpenRouter Qwen 2.5 VL
+无需本地模型，直接调用云端 API（在中国可访问）
+"""
+import sys
+from pathlib import Path
+# 添加项目根目录到 Python 路径
+sys.path.insert(0, str(Path(__file__).parent.parent))
+from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
+from typing import Dict, Any
+import base64
+import os
+import json
+import logging
+import time
+from datetime import datetime
+from openai import AsyncOpenAI
+import httpx
 from shared.utils.response import success_response  
-from shared.utils.rate_limit import limit_expensive  
 # 配置日志  
 logging.basicConfig(level=logging.INFO)  
 logger = logging.getLogger(__name__)  
