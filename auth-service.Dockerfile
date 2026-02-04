@@ -1,14 +1,12 @@
 # Auth Service - Zeabur Dockerfile
 FROM python:3.11-slim
 
+LABEL "language"="python"
+LABEL "framework"="fastapi"
+
 WORKDIR /app
 
-# 安装系统依赖
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    gcc \
-    && rm -rf /var/lib/apt/lists/*
-
-# 复制 requirements 并安装
+# 安装依赖（分层缓存：只在 requirements.txt 变化时重新安装依赖）
 COPY services/auth-service/requirements.txt .
 RUN pip install --no-cache-dir --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt

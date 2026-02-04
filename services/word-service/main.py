@@ -510,17 +510,4 @@ async def delete_word(
 
 if __name__ == "__main__":
     import uvicorn
-
-    # 启动时运行数据库迁移
-    @app.on_event("startup")
-    async def startup_event():
-        """应用启动时执行数据库迁移"""
-        try:
-            from shared.database.migrate import run_migrations
-            logger.info("开始执行数据库迁移...")
-            await run_migrations()
-            logger.info("数据库迁移完成")
-        except Exception as e:
-            logger.warning(f"数据库迁移失败（可能已执行过）: {e}")
-
     uvicorn.run(app, host="0.0.0.0", port=8004)
