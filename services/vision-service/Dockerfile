@@ -1,61 +1,40 @@
-# Vision Service - Dockerfile (Fixed Version)
-# Force rebuild by changing all layer hashes
+# Vision Service - Optimized Dockerfile for Zeabur
+# 使用 pip 缓存和最小依赖，大幅减少构建时间
 
-FROM python:3.11-slim AS builder
+FROM python:3.11-slim
 
 ENV PYTHONUNBUFFERED=1 \
     PYTHONDONTWRITEBYTECODE=1 \
-    PIP_NO_CACHE_DIR=1 \
-    PIP_DISABLE_PIP_VERSION_CHECK=1
+    # 启用 pip 缓存以加速构建
+    PIP_CACHE_DIR=/root/.cache/pip
 
 WORKDIR /app
 
-# Install system dependencies
+# 只安装必要的系统依赖
 RUN apt-get update && \
     apt-get install -y --no-install-recommends \
-        gcc \
-        g++ \
-        postgresql-client \
         curl \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
 
-# Install Python dependencies step by step to avoid cache
-RUN pip install --upgrade pip
-RUN pip install setuptools wheel
-RUN pip install "fastapi==0.115.0"
-RUN pip install "uvicorn[standard]==0.32.0"
-RUN pip install "pydantic==2.9.2"
-RUN pip install "pydantic-settings==2.6.0"
-RUN pip install "python-dotenv==1.0.1"
-RUN pip install "sqlalchemy==2.0.35"
-RUN pip install "asyncpg==0.29.0"
-RUN pip install "psycopg2-binary==2.9.9"
-RUN pip install "python-jose[cryptography]==3.3.0"
-RUN pip install "passlib[bcrypt]==1.7.4"
-RUN pip install "python-multipart==0.0.12"
-RUN pip install "aiofiles==24.1.0"
-RUN pip install "httpx==0.27.2"
-RUN pip install "redis==5.2.0"
-RUN pip install "openai>=1.0.0"
+# 复制依赖文件（利用 Docker 缓存层）
+COPY requirements-deploy.txt .
 
-# Verify installation
-RUN python -c "import uvicorn; print(f'uvicorn: {uvicorn.__version__}')" && \
-    python -c "import fastapi; print(f'fastapi: {fastapi.__version__}')" && \
-    echo "All dependencies verified!"
+# 一次性安装所有 Python 依赖（利用 Zeabur pip 缓存）
+RUN pip install --no-cache-dir -r requirements-deploy.txt
 
-# Copy application code
+# 复制应用代码
 COPY . .
 
-# Set Python path
+# 设置 Python 路径
 ENV PYTHONPATH="/app:$PYTHONPATH"
 
-# Expose port
+# 暴露端口
 EXPOSE 8003
 
-# Health check
+# 健康检查
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -f http://localhost:8003/ || exit 1
 
-# Run application
+# 运行应用
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8003"]

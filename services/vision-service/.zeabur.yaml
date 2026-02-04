@@ -1,0 +1,4 @@
+# Zeabur 配置文件 - 启用 pip 缓存加速构建
+
+prebuild:
+  - echo "Starting vision-service build with pip cache..."
