@@ -42,7 +42,7 @@ export function adaptUserWordToWord(userWord: UserWordResponse): Word {
       : undefined) as any,
     learningRecord: {
       addedDate: userWord.created_at,
-      reviewCount: 0, // 后端暂未提供
+      reviewCount: userWord.review_count ?? 0, // 使用后端返回的复习次数
       masteryLevel: 'learning',
       lastReviewDate: userWord.created_at,
     },

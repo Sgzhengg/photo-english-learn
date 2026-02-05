@@ -77,15 +77,11 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
     - 场景翻译（中文翻译）
     限流：每个用户/IP 每分钟最多 30 次
     模型：google/gemma-3-12b-it（Gemma 3 12B，性价比高，价格低）
-    备选：meta-llama/Llama-3.2-11B-Vision-Instruct
     注：DeepInfra 提供近乎免费的高速推理服务
     """
 
-    # 定义模型列表（使用 DeepInfra 可用的高性价比模型）
-    MODELS = [
-        "google/gemma-3-12b-it",  # Gemma 3 12B（性价比高，价格低）
-        "meta-llama/Llama-3.2-11B-Vision-Instruct",  # Llama 3.2 11B（备选）
-    ]  
+    # 使用固定模型
+    MODEL = "google/gemma-3-12b-it"  
     try:  
         # 读取图片数据  
         image_data = await file.read()  
@@ -93,24 +89,20 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
         logger.info(f"📸 收到图片识别请求，大小: {len(image_data)} 字节")  
         if not image_data:  
             raise ValueError("上传的图片为空")  
-        # 转换为 base64  
-        base64_image = base64.b64encode(image_data).decode('utf-8')  
-        # 尝试多个模型，直到成功  
-        last_error = None  
-        successful_model = None  
-        response = None  
-        for idx, model in enumerate(MODELS):  
-            try:  
-                logger.info(f"🔄 [{idx+1}/{len(MODELS)}] 尝试使用模型: {model}")  
-                call_start_time = time.time()  
-                response = await client.chat.completions.create(  
-                    model=model,  
-                    messages=[{  
-                        "role": "user",  
-                        "content": [  
-                            {  
-                                "type": "text",  
-                                "text": """请分析这张图片，识别出所有可见的物体和场景。  
+        # 转换为 base64
+        base64_image = base64.b64encode(image_data).decode('utf-8')
+
+        # 使用固定模型调用
+        logger.info(f"🔄 使用模型: {MODEL}")
+        call_start_time = time.time()
+        response = await client.chat.completions.create(
+            model=MODEL,
+            messages=[{
+                "role": "user",
+                "content": [
+                    {
+                        "type": "text",
+                        "text": """请分析这张图片，识别出所有可见的物体和场景。  
 返回 JSON 格式的结果，包含以下字段：
 1. objects: 数组，每个对象包含 word（英文单词）、phonetic（音标）、chinese（中文翻译）
 2. scene_description: 英文场景描述（一句话）
@@ -130,60 +122,40 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
   ],  
   "scene_description": "Children are sitting at a table playing with wooden blocks.",  
   "scene_translation": "孩子们坐在桌子旁玩木制积木。"  
-}  
-                                """  
-                            },  
-                            {  
-                                "type": "image_url",  
-                                "image_url": {  
-                                    "url": f"data:image/jpeg;base64,{base64_image}"  
-                                }  
-                            }  
-                        ]  
-                    }],  
-                    response_format={"type": "json_object"},  
-                    max_tokens=500  
-                )  
-                # 验证响应  
-                if not response or not response.choices or len(response.choices) == 0:  
-                    raise ValueError(f"模型 {model} 返回空响应")  
-                # 获取响应内容  
-                result_text = response.choices[0].message.content  
-                if not result_text:  
-                    raise ValueError(f"模型 {model} 返回空内容")  
-                # 尝试解析 JSON  
-                result = json.loads(result_text)  
-                # 成功获取响应，跳出循环  
-                call_duration = time.time() - call_start_time  
-                successful_model = model  
-                logger.info(f"✅ 模型 {model} 调用成功，耗时: {call_duration:.2f}秒")  
-                break  
-            except json.JSONDecodeError as e:  
-                # JSON 解析错误  
-                call_duration = time.time() - call_start_time  
-                logger.warning(f"❌ 模型 {model} JSON 解析失败 ({call_duration:.2f}秒): {str(e)}")  
-                last_error = e  
-                continue  
-            except Exception as e:  
-                # 其他错误，尝试下一个模型  
-                call_duration = time.time() - call_start_time  
-                logger.warning(f"❌ 模型 {model} 调用失败 ({call_duration:.2f}秒): {str(e)[:200]}")  
-                last_error = e  
-                continue  
-        # 检查是否成功获取响应  
-        if response is None or 'result' not in locals():  
-            error_msg = f"所有模型都失败了。最后错误: {str(last_error)}"  
-            logger.error(error_msg)  
-            raise HTTPException(  
-                status_code=503,  
-                detail=error_msg  
-            )  
+}
+                                """
+                            },
+                            {
+                                "type": "image_url",
+                                "image_url": {
+                                    "url": f"data:image/jpeg;base64,{base64_image}"
+                                }
+                            }
+                        ]
+            }],
+            response_format={"type": "json_object"},
+            max_tokens=500
+        )
+
+        # 验证响应
+        if not response or not response.choices or len(response.choices) == 0:
+            raise ValueError(f"模型 {MODEL} 返回空响应")
+
+        # 获取响应内容
+        result_text = response.choices[0].message.content
+        if not result_text:
+            raise ValueError(f"模型 {MODEL} 返回空内容")
+
+        # 解析 JSON
+        result = json.loads(result_text)
+        call_duration = time.time() - call_start_time
+        logger.info(f"✅ 模型 {MODEL} 调用成功，耗时: {call_duration:.2f}秒")  
         # 验证结果数据  
         if not isinstance(result, dict):  
             raise ValueError("API 返回的不是有效的 JSON 对象")  
         # 计算总耗时  
         total_duration = time.time() - request_start_time  
-        logger.info(f"✨ 识别成功 | 模型: {successful_model} | 物体: {len(result.get('objects', []))} 个 | 总耗时: {total_duration:.2f}秒")  
+        logger.info(f"✨ 识别成功 | 模型: {MODEL} | 物体: {len(result.get('objects', []))} 个 | 总耗时: {total_duration:.2f}秒")  
         logger.info(f"   场景描述: {result.get('scene_description', '')[:60]}...")  
         logger.info(f"   场景翻译: {result.get('scene_translation', '')[:60]}...")  
         # 构造返回数据  

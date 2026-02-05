@@ -219,26 +219,43 @@ export function PracticeQuestionView({
         <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 p-6 mb-6">
           {/* 所有题型都使用输入框 */}
           <div>
-            <input
-              type="text"
-              value={currentAnswer}
-              onChange={(e) => setLocalAnswer(e.target.value)}
-              disabled={!!showFeedback}
-              placeholder={
-                currentQuestion.type === 'dictation'
-                  ? '听音后输入单词...'
-                  : '输入你的答案...'
-              }
-              className={`w-full px-5 py-4 text-lg rounded-xl border-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 transition-all ${
-                showFeedback
-                  ? 'border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-70'
-                  : 'border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50'
-              }`}
-              style={{ fontFamily: 'Inter, sans-serif' }}
-              onKeyDown={(e) => e.key === 'Enter' && !showFeedback && handleSubmit()}
-            />
+            <div className="flex gap-2">
+              <div className="flex-1 relative">
+                <input
+                  type="text"
+                  value={currentAnswer}
+                  onChange={(e) => setLocalAnswer(e.target.value)}
+                  disabled={!!showFeedback}
+                  placeholder={
+                    currentQuestion.type === 'dictation'
+                      ? '听音后输入单词...'
+                      : '输入你的答案...'
+                  }
+                  className={`w-full px-5 py-4 text-lg rounded-xl border-2 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-600 transition-all pr-14 ${
+                    showFeedback
+                      ? 'border-slate-300 dark:border-slate-600 cursor-not-allowed opacity-70'
+                      : 'border-slate-200 dark:border-slate-700 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 dark:focus:ring-indigo-900/50'
+                  }`}
+                  style={{ fontFamily: 'Inter, sans-serif' }}
+                  onKeyDown={(e) => e.key === 'Enter' && !showFeedback && handleSubmit()}
+                />
+                {/* 输入框内的提交按钮 */}
+                <button
+                  onClick={() => !showFeedback && handleSubmit()}
+                  disabled={!currentAnswer.trim() || showFeedback !== null}
+                  className={`absolute right-2 top-1/2 -translate-y-1/2 px-3 py-2 rounded-lg font-medium text-sm transition-all ${
+                    !currentAnswer.trim() || showFeedback !== null
+                      ? 'bg-slate-100 dark:bg-slate-700 text-slate-400 dark:text-slate-500 cursor-not-allowed'
+                      : 'bg-indigo-500 hover:bg-indigo-600 text-white'
+                  }`}
+                  title="按 Enter 或点击提交"
+                >
+                  Enter
+                </button>
+              </div>
+            </div>
             <p className="mt-2 text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-              按 Enter 键快速提交
+              点击 "Enter" 按钮或按键盘 Enter 键快速提交
             </p>
           </div>
 

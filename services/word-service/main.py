@@ -17,7 +17,7 @@ from datetime import datetime
 
 from shared.database.models import (
     User, Word, UserWord, Tag, UserWordResponse, WordResponse,
-    WordCreate, UserWordCreate, Tag as TagModel
+    WordCreate, UserWordCreate, Tag as TagModel, ReviewRecord
 )
 from shared.database.database import get_async_db
 from shared.utils.auth import get_current_user, get_current_user_optional
@@ -235,6 +235,23 @@ async def get_word_list(
     response = []
     for uw in user_words:
         await db.refresh(uw, ["word", "tag"])
+
+        # 查询复习记录
+        review_result = await db.execute(
+            select(ReviewRecord).where(
+                and_(
+                    ReviewRecord.user_id == current_user.user_id,
+                    ReviewRecord.word_id == uw.word_id
+                )
+            )
+        )
+        review_record = review_result.scalar_one_or_none()
+
+        # 计算总复习次数
+        total_correct = review_record.total_correct if review_record else 0
+        total_wrong = review_record.total_wrong if review_record else 0
+        review_count = total_correct + total_wrong
+
         response.append(UserWordResponse(
             id=uw.id,
             user_id=uw.user_id,
@@ -243,7 +260,10 @@ async def get_word_list(
             tag_id=uw.tag_id,
             created_at=uw.created_at,
             word=WordResponse.model_validate(uw.word) if uw.word else None,
-            tag={"tag_id": uw.tag.tag_id, "tag_name": uw.tag.tag_name, "color": uw.tag.color} if uw.tag else None
+            tag={"tag_id": uw.tag.tag_id, "tag_name": uw.tag.tag_name, "color": uw.tag.color} if uw.tag else None,
+            total_correct=total_correct,
+            total_wrong=total_wrong,
+            review_count=review_count
         ))
 
     return response
@@ -256,7 +276,7 @@ async def add_word(
     db: AsyncSession = Depends(get_async_db)
 ):
     """
-    添加生词到生词库
+    添加生词到生词库（性能优化版）
 
     - **word_id**: 单词 ID
     - **scene_id**: 来源场景 ID（可选）
@@ -268,9 +288,6 @@ async def add_word(
     - **example_translation**: 例句翻译（可选，来自 vision-service）
 
     支持匿名用户（通过 X-Anonymous-User-ID 头）
-
-    注意：如果提供了单词详情（chinese_meaning 等），会更新数据库中的单词记录，
-    避免重复调用翻译 API。
     """
     # 检查用户是否已认证
     if not current_user:
@@ -296,32 +313,25 @@ async def add_word(
             detail="该单词已在生词库中"
         )
 
-    # 如果提供了单词详情，更新数据库中的单词记录（使用 vision-service 的识别结果）
-    # 这避免了重复调用翻译 API，并使用 Qwen 2.5 VL 的高质量翻译
+    # 如果提供了单词详情，更新数据库中的单词记录
     if word_data.chinese_meaning or word_data.phonetic_us:
         try:
             word_result = await db.execute(select(Word).where(Word.word_id == word_data.word_id))
             word = word_result.scalar_one_or_none()
 
             if word:
-                # 无条件更新：Qwen 2.5 VL 的翻译质量比免费 API 更好
-                update_data = {}
+                # 更新单词详情
                 if word_data.chinese_meaning:
-                    update_data['chinese_meaning'] = word_data.chinese_meaning
+                    word.chinese_meaning = word_data.chinese_meaning
                 if word_data.phonetic_us:
-                    update_data['phonetic_us'] = word_data.phonetic_us
+                    word.phonetic_us = word_data.phonetic_us
                 if word_data.phonetic_uk:
-                    update_data['phonetic_uk'] = word_data.phonetic_uk
+                    word.phonetic_uk = word_data.phonetic_uk
                 if word_data.example_sentence:
-                    update_data['example_sentence'] = word_data.example_sentence
+                    word.example_sentence = word_data.example_sentence
                 if word_data.example_translation:
-                    update_data['example_translation'] = word_data.example_translation
-
-                if update_data:
-                    for key, value in update_data.items():
-                        setattr(word, key, value)
-                    await db.commit()
-                    logger.info(f"✅ Updated word {word.word_id} with Qwen 2.5 VL data: {list(update_data.keys())}")
+                    word.example_translation = word_data.example_translation
+                logger.info(f"✅ Updated word {word.word_id} with vision-service data")
         except Exception as e:
             logger.warning(f"Failed to update word details (non-critical): {e}")
 
@@ -333,19 +343,19 @@ async def add_word(
         tag_id=word_data.tag_id or 1
     )
     db.add(new_user_word)
-    await db.commit()
-    await db.refresh(new_user_word)
 
-    # 创建复习记录（可选，失败不影响主要功能）
+    # 创建复习记录（不立即提交，合并到主事务）
     try:
         from shared.word.review import create_review_record
-        await create_review_record(db, current_user.user_id, word_data.word_id)
+        await create_review_record(db, current_user.user_id, word_data.word_id, commit=False)
         logger.info(f"Created review record for user {current_user.user_id}, word {word_data.word_id}")
     except Exception as e:
         logger.warning(f"Failed to create review record (non-critical): {e}")
-        # 继续执行，复习记录创建失败不影响主要功能
 
-    # 加载关联数据
+    # 一次性提交所有更改（单词更新、生词记录、复习记录）
+    await db.commit()
+
+    # 刷新以获取生成的ID和关联数据
     await db.refresh(new_user_word, ["word", "tag"])
 
     return UserWordResponse(
@@ -356,7 +366,10 @@ async def add_word(
         tag_id=new_user_word.tag_id,
         created_at=new_user_word.created_at,
         word=WordResponse.model_validate(new_user_word.word) if new_user_word.word else None,
-        tag={"tag_id": new_user_word.tag.tag_id, "tag_name": new_user_word.tag.tag_name, "color": new_user_word.tag.color} if new_user_word.tag else None
+        tag={"tag_id": new_user_word.tag.tag_id, "tag_name": new_user_word.tag.tag_name, "color": new_user_word.tag.color} if new_user_word.tag else None,
+        total_correct=0,  # 新添加的单词，还没有复习记录
+        total_wrong=0,
+        review_count=0
     )
 
 
@@ -399,6 +412,22 @@ async def get_word_detail(
             detail="单词数据不存在"
         )
 
+    # 查询复习记录
+    review_result = await db.execute(
+        select(ReviewRecord).where(
+            and_(
+                ReviewRecord.user_id == current_user.user_id,
+                ReviewRecord.word_id == user_word.word_id
+            )
+        )
+    )
+    review_record = review_result.scalar_one_or_none()
+
+    # 计算总复习次数
+    total_correct = review_record.total_correct if review_record else 0
+    total_wrong = review_record.total_wrong if review_record else 0
+    review_count = total_correct + total_wrong
+
     # 返回完整的用户生词响应
     return UserWordResponse(
         id=user_word.id,
@@ -408,7 +437,10 @@ async def get_word_detail(
         tag_id=user_word.tag_id,
         created_at=user_word.created_at,
         word=WordResponse.model_validate(user_word.word),
-        tag={"tag_id": user_word.tag.tag_id, "tag_name": user_word.tag.tag_name, "color": user_word.tag.color} if user_word.tag else None
+        tag={"tag_id": user_word.tag.tag_id, "tag_name": user_word.tag.tag_name, "color": user_word.tag.color} if user_word.tag else None,
+        total_correct=total_correct,
+        total_wrong=total_wrong,
+        review_count=review_count
     )
 
 

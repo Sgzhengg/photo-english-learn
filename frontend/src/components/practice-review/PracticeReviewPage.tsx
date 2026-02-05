@@ -160,7 +160,7 @@ export function PracticeReviewPage() {
     setIsPlayingAudio(false);
   };
 
-  const handleCompletePractice = () => {
+  const handleCompletePractice = async () => {
     if (!dailyTask) return;
 
     // Calculate results
@@ -198,6 +198,29 @@ export function PracticeReviewPage() {
     };
 
     setPracticeResult(result);
+
+    // 提交复习结果到后端（更新艾宾浩斯曲线）
+    try {
+      console.log('📝 提交复习结果到后端...');
+      for (const [questionId, answer] of userAnswers.entries()) {
+        const question = questions.find(q => q.id === questionId);
+        if (question?.wordId) {
+          const isCorrect = question.correctAnswer === answer;
+          // wordId 是字符串格式，需要转换为数字
+          const numericWordId = parseInt(question.wordId, 10);
+          const submitResult = await practiceApi.submitReview(numericWordId, isCorrect);
+          if (submitResult.success) {
+            console.log(`✅ 单词 ${numericWordId} 复习结果已提交，正确: ${isCorrect}`);
+          } else {
+            console.error(`❌ 单词 ${numericWordId} 复习结果提交失败:`, submitResult.error);
+          }
+        }
+      }
+      console.log('✅ 所有复习结果已提交');
+    } catch (error) {
+      console.error('❌ 提交复习结果时出错:', error);
+    }
+
     setCurrentView('practice-results');
   };
 

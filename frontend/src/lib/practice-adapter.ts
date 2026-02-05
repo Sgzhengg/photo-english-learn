@@ -60,7 +60,7 @@ interface BackendProgress {
  */
 export function adaptReviewRecordToWordInTask(record: BackendReviewRecord): WordInTask {
   return {
-    id: String(record.word_id),
+    id: String(record.word_id),  // 使用 word_id 作为 ID
     word: record.word?.english_word || '',
     phonetic: record.word?.phonetic_us || '',
     definition: record.word?.chinese_meaning || '',

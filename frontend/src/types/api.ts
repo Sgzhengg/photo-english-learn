@@ -41,6 +41,12 @@ export interface UserWordResponse {
     tag_name: string;
     color: string;
   };
+  /** 总正确次数 */
+  total_correct?: number;
+  /** 总错误次数 */
+  total_wrong?: number;
+  /** 总复习次数 */
+  review_count?: number;
 }
 
 /**

@@ -1,6 +1,6 @@
 """
 场景理解模块
-使用多模态大模型理解场景内容（支持 OpenRouter）
+使用多模态大模型理解场景内容（使用 DeepInfra）
 """
 from typing import List, Dict, Any, Optional
 import os
@@ -10,30 +10,17 @@ from openai import OpenAI, AsyncOpenAI
 
 
 class SceneUnderstanding:
-    """场景理解器 - 支持 OpenRouter"""
+    """场景理解器 - 使用 DeepInfra API"""
 
     def __init__(self):
         """初始化场景理解器"""
-        self.api_key = os.getenv("OPENROUTER_API_KEY") or os.getenv("OPENAI_API_KEY")
-        self.use_openrouter = bool(os.getenv("OPENROUTER_API_KEY"))
+        self.api_key = os.getenv("DEEPINFRA_API_KEY")
 
-        # OpenRouter 配置
-        if self.use_openrouter:
-            self.base_url = "https://openrouter.ai/api/v1"
-            self.app_name = os.getenv("APP_NAME", "Photo English Learn")
-            self.app_url = os.getenv("APP_URL", "https://github.com")
-        else:
-            self.base_url = None
+        # DeepInfra 配置
+        self.base_url = "https://api.deepinfra.com/v1/openai"
 
-        # 模型配置
-        self.vision_model = os.getenv(
-            "VISION_MODEL",
-            "openai/gpt-4o" if self.use_openrouter else "gpt-4o"
-        )
-        self.text_model = os.getenv(
-            "TEXT_MODEL",
-            "openai/gpt-4o" if self.use_openrouter else "gpt-4o"
-        )
+        # 模型配置（使用 Qwen3-32B，性价比高，中文能力强）
+        self.text_model = os.getenv("TEXT_MODEL", "Qwen/Qwen3-32B")
 
         # 创建客户端
         if self.api_key:
@@ -49,15 +36,6 @@ class SceneUnderstanding:
             self.client = None
             self.async_client = None
 
-    def _get_headers(self) -> Dict[str, str]:
-        """获取 OpenRouter 请求头"""
-        if not self.use_openrouter:
-            return {}
-        return {
-            "HTTP-Referer": self.app_url,
-            "X-Title": self.app_name,
-        }
-
     def generate_description(
         self,
         image_data: bytes,
@@ -65,7 +43,7 @@ class SceneUnderstanding:
         language: str = "zh"
     ) -> str:
         """
-        生成场景描述
+        生成场景描述（已弃用，使用模板生成）
 
         Args:
             image_data: 图像数据
@@ -77,63 +55,8 @@ class SceneUnderstanding:
         """
         # 提取检测到的物体名称
         objects = [det["english_word"] for det in detections]
-
-        if not objects:
-            return "这是一张照片" if language == "zh" else "This is a photo"
-
-        # 使用 LLM 生成描述
-        if self.client:
-            return self._generate_with_llm(image_data, objects, language)
-        else:
-            # 简单模板生成
-            return self._generate_template(objects, language)
-
-    def _generate_with_llm(
-        self,
-        image_data: bytes,
-        objects: List[str],
-        language: str
-    ) -> str:
-        """使用 LLM 生成场景描述"""
-        # 编码图像
-        base64_image = base64.b64encode(image_data).decode('utf-8')
-
-        # 构建提示词
-        objects_str = ", ".join(objects)
-        if language == "zh":
-            prompt = f"请用中文描述这张照片。照片中包含: {objects_str}。请用简洁的语言描述这个场景（不超过50字）。"
-        else:
-            prompt = f"Describe this photo in English. The photo contains: {objects_str}. Keep it concise (under 50 words)."
-
-        try:
-            kwargs = {
-                "model": self.vision_model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                "max_tokens": 100
-            }
-
-            # OpenRouter 需要额外的 headers
-            if self.use_openrouter:
-                kwargs["extra_headers"] = self._get_headers()
-
-            response = self.client.chat.completions.create(**kwargs)
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"LLM error: {e}")
-            return self._generate_template(objects, language)
+        # 简单模板生成（不使用 LLM，因为 Qwen3-32B 不支持图像）
+        return self._generate_template(objects, language)
 
     def _generate_template(self, objects: List[str], language: str) -> str:
         """使用模板生成简单描述"""
@@ -205,18 +128,12 @@ Return the result in this JSON format:
 {{"sentence": "English sentence here", "translation": "中文翻译"}}"""
 
         try:
-            kwargs = {
-                "model": self.text_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "response_format": {"type": "json_object"},
-                "max_tokens": 150
-            }
-
-            # OpenRouter 需要额外的 headers
-            if self.use_openrouter:
-                kwargs["extra_headers"] = self._get_headers()
-
-            response = self.client.chat.completions.create(**kwargs)
+            response = self.client.chat.completions.create(
+                model=self.text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                max_tokens=150
+            )
             result = json.loads(response.choices[0].message.content)
             return {
                 "sentence": result.get("sentence", "This is a scene with " + objects[0].lower()),
@@ -255,7 +172,7 @@ Return the result in this JSON format:
 
 
 class AsyncSceneUnderstanding(SceneUnderstanding):
-    """异步场景理解器"""
+    """异步场景理解器 - 使用 DeepInfra API"""
 
     def __init__(self):
         super().__init__()
@@ -276,60 +193,14 @@ class AsyncSceneUnderstanding(SceneUnderstanding):
         detections: List[Dict[str, Any]],
         language: str = "zh"
     ) -> str:
-        """异步生成场景描述"""
+        """异步生成场景描述（使用模板）"""
         objects = [det["english_word"] for det in detections]
 
         if not objects:
             return "这是一张照片" if language == "zh" else "This is a photo"
 
-        if self.async_client:
-            return await self._generate_with_llm_async(image_data, objects, language)
-        else:
-            return self._generate_template(objects, language)
-
-    async def _generate_with_llm_async(
-        self,
-        image_data: bytes,
-        objects: List[str],
-        language: str
-    ) -> str:
-        """异步使用 LLM 生成场景描述"""
-        base64_image = base64.b64encode(image_data).decode('utf-8')
-
-        objects_str = ", ".join(objects)
-        if language == "zh":
-            prompt = f"请用中文描述这张照片。照片中包含: {objects_str}。请用简洁的语言描述这个场景（不超过50字）。"
-        else:
-            prompt = f"Describe this photo in English. The photo contains: {objects_str}. Keep it concise (under 50 words)."
-
-        try:
-            kwargs = {
-                "model": self.vision_model,
-                "messages": [
-                    {
-                        "role": "user",
-                        "content": [
-                            {"type": "text", "text": prompt},
-                            {
-                                "type": "image_url",
-                                "image_url": {
-                                    "url": f"data:image/jpeg;base64,{base64_image}"
-                                }
-                            }
-                        ]
-                    }
-                ],
-                "max_tokens": 100
-            }
-
-            if self.use_openrouter:
-                kwargs["extra_headers"] = self._get_headers()
-
-            response = await self.async_client.chat.completions.create(**kwargs)
-            return response.choices[0].message.content.strip()
-        except Exception as e:
-            print(f"LLM error: {e}")
-            return self._generate_template(objects, language)
+        # 简单模板生成（不使用 LLM，因为 Qwen3-32B 不支持图像）
+        return self._generate_template(objects, language)
 
     async def generate_sentence_async(
         self,
@@ -372,17 +243,12 @@ Return the result in this JSON format:
 {{"sentence": "English sentence here", "translation": "中文翻译"}}"""
 
         try:
-            kwargs = {
-                "model": self.text_model,
-                "messages": [{"role": "user", "content": prompt}],
-                "response_format": {"type": "json_object"},
-                "max_tokens": 150
-            }
-
-            if self.use_openrouter:
-                kwargs["extra_headers"] = self._get_headers()
-
-            response = await self.async_client.chat.completions.create(**kwargs)
+            response = await self.async_client.chat.completions.create(
+                model=self.text_model,
+                messages=[{"role": "user", "content": prompt}],
+                response_format={"type": "json_object"},
+                max_tokens=150
+            )
             result = json.loads(response.choices[0].message.content)
             return {
                 "sentence": result.get("sentence", "This is a scene with " + objects[0].lower()),

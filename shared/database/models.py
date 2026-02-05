@@ -259,6 +259,10 @@ class UserWordResponse(BaseModel):
     created_at: datetime
     word: Optional[WordResponse] = None
     tag: Optional[dict] = None
+    # 复习记录字段
+    total_correct: Optional[int] = 0
+    total_wrong: Optional[int] = 0
+    review_count: Optional[int] = 0  # 总复习次数
 
     class Config:
         from_attributes = True

@@ -32,7 +32,8 @@ async def create_review_record(
     db: AsyncSession,
     user_id: int,
     word_id: int,
-    level: int = 0
+    level: int = 0,
+    commit: bool = False
 ) -> ReviewRecord:
     """
     创建复习记录（如果已存在则返回现有记录）
@@ -42,6 +43,7 @@ async def create_review_record(
         user_id: 用户 ID
         word_id: 单词 ID
         level: 难度等级（0-8，对应艾宾浩斯曲线的 9 个阶段）
+        commit: 是否立即提交（默认 False，由调用者控制事务）
 
     Returns:
         创建或已存在的复习记录
@@ -86,8 +88,11 @@ async def create_review_record(
     )
 
     db.add(record)
-    await db.commit()
-    await db.refresh(record)
+
+    # 仅在需要时提交（允许调用者控制事务）
+    if commit:
+        await db.commit()
+        await db.refresh(record)
 
     return record
 
