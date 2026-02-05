@@ -19,7 +19,7 @@ from shared.database.models import (
     SceneSentenceCreate, SceneSentenceResponse, ReviewRecordResponse
 )
 from shared.database.database import get_async_db
-from shared.utils.auth import get_current_user, get_current_user_optional
+from shared.utils.auth import get_current_user
 from shared.utils.response import success_response
 from shared.vision.scene_understanding import SceneUnderstanding
 from shared.word.review import (
@@ -62,9 +62,9 @@ async def root():
 @app.post("/practice/generate", response_model=SceneSentenceResponse, tags=["Practice"])
 async def generate_sentence(
     scene_id: int,
-    difficulty: str = Query("beginner", description="难度: beginner, intermediate, advanced"),
     current_user: Annotated[User, Depends(get_current_user)],
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db),
+    difficulty: str = Query("beginner", description="难度: beginner, intermediate, advanced")
 ):
     """
     基于场景生成有趣的英语短句
@@ -163,9 +163,9 @@ async def get_scene_sentences(
 
 @app.get("/practice/review", response_model=List[ReviewRecordResponse], tags=["Practice"])
 async def get_review_list(
-    limit: int = Query(20, ge=1, le=100, description="返回数量"),
     current_user: Annotated[User, Depends(get_current_user)],
-    db: AsyncSession = Depends(get_async_db)
+    db: AsyncSession = Depends(get_async_db),
+    limit: int = Query(20, ge=1, le=100, description="返回数量")
 ):
     """
     获取待复习的单词列表

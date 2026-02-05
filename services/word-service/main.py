@@ -20,7 +20,7 @@ from shared.database.models import (
     WordCreate, UserWordCreate, Tag as TagModel, ReviewRecord
 )
 from shared.database.database import get_async_db
-from shared.utils.auth import get_current_user, get_current_user_optional
+from shared.utils.auth import get_current_user
 from shared.utils.response import success_response
 from shared.utils.cache import cached, CachePolicy
 from shared.word.dictionary import DictionaryAPI
@@ -195,12 +195,12 @@ async def get_tags(
 
 @app.get("/list", response_model=List[UserWordResponse], tags=["Words"])
 async def get_word_list(
+    current_user: Annotated[User, Depends(get_current_user)],
+    db: AsyncSession = Depends(get_async_db),
     skip: int = Query(0, ge=0, description="跳过的记录数"),
     limit: int = Query(20, ge=1, le=100, description="返回的记录数"),
     tag_id: Optional[int] = Query(None, description="按标签筛选"),
-    search: Optional[str] = Query(None, description="搜索单词"),
-    current_user: Annotated[User, Depends(get_current_user)],
-    db: AsyncSession = Depends(get_async_db)
+    search: Optional[str] = Query(None, description="搜索单词")
 ):
     """
     获取用户的生词列表
