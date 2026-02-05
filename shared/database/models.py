@@ -25,7 +25,7 @@ class User(Base):
     email = Column(String(100), unique=True, nullable=False, index=True)
     password_hash = Column(String(255), nullable=False)
     nickname = Column(String(50))
-    avatar_url = Column(String(512))
+    avatar_url = Column(Text)  # 改为 Text 类型，支持存储 base64 图片数据
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 
