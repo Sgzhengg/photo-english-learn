@@ -177,11 +177,19 @@ export function PracticeReviewPage() {
       })
       .map(([questionId, answer]) => {
         const question = questions.find(q => q.id === questionId);
+
+        // 从 dailyTask 中查找对应的单词信息
+        const wordInTask = dailyTask.words.find(w => w.id === question?.wordId);
+
         return {
           questionId,
-          userAnswer: answer,
-          correctAnswer: question?.correctAnswer || '',
           wordId: question?.wordId || '',
+          word: wordInTask?.word || question?.correctAnswer || '',
+          phonetic: wordInTask?.phonetic || question?.phonetic || '',
+          definition: wordInTask?.definition || question?.hint || '',
+          userWrongAnswer: answer,
+          addedAt: new Date().toISOString(),
+          reviewCount: 0,
         };
       });
 
