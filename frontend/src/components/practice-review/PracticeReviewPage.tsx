@@ -206,13 +206,12 @@ export function PracticeReviewPage() {
         const question = questions.find(q => q.id === questionId);
         if (question?.wordId) {
           const isCorrect = question.correctAnswer === answer;
-          // wordId 是字符串格式，需要转换为数字
-          const numericWordId = parseInt(question.wordId, 10);
-          const submitResult = await practiceApi.submitReview(numericWordId, isCorrect);
+          // wordId 已经是字符串格式，直接使用
+          const submitResult = await practiceApi.submitReview(question.wordId, isCorrect);
           if (submitResult.success) {
-            console.log(`✅ 单词 ${numericWordId} 复习结果已提交，正确: ${isCorrect}`);
+            console.log(`✅ 单词 ${question.wordId} 复习结果已提交，正确: ${isCorrect}`);
           } else {
-            console.error(`❌ 单词 ${numericWordId} 复习结果提交失败:`, submitResult.error);
+            console.error(`❌ 单词 ${question.wordId} 复习结果提交失败:`, submitResult.error);
           }
         }
       }
