@@ -63,7 +63,7 @@ async def root():
 async def generate_sentence(
     scene_id: int,
     difficulty: str = Query("beginner", description="难度: beginner, intermediate, advanced"),
-    current_user: Annotated[Optional[User], Depends(get_current_user_optional)] = None,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: AsyncSession = Depends(get_async_db)
 ):
     """
@@ -71,15 +71,24 @@ async def generate_sentence(
 
     - **scene_id**: 场景 ID
     - **difficulty**: 难度等级 (beginner, intermediate, advanced)
+
+    需要用户登录认证，场景必须属于当前用户
     """
     # 获取场景
-    result = await db.execute(select(Scene).where(Scene.scene_id == scene_id))
+    result = await db.execute(
+        select(Scene).where(
+            and_(
+                Scene.scene_id == scene_id,
+                Scene.user_id == current_user.user_id
+            )
+        )
+    )
     scene = result.scalar_one_or_none()
 
     if not scene:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="场景不存在"
+            detail="场景不存在或无权访问"
         )
 
     # 获取场景中的物体
@@ -125,7 +134,25 @@ async def get_scene_sentences(
     获取场景的所有短句
 
     - **scene_id**: 场景 ID
+    - 需要用户登录认证，场景必须属于当前用户
     """
+    # 先检查场景是否属于当前用户
+    scene_result = await db.execute(
+        select(Scene).where(
+            and_(
+                Scene.scene_id == scene_id,
+                Scene.user_id == current_user.user_id
+            )
+        )
+    )
+    scene = scene_result.scalar_one_or_none()
+
+    if not scene:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="场景不存在或无权访问"
+        )
+
     result = await db.execute(
         select(SceneSentence).where(SceneSentence.scene_id == scene_id)
     )
@@ -137,22 +164,19 @@ async def get_scene_sentences(
 @app.get("/practice/review", response_model=List[ReviewRecordResponse], tags=["Practice"])
 async def get_review_list(
     limit: int = Query(20, ge=1, le=100, description="返回数量"),
-    current_user: Annotated[Optional[User], Depends(get_current_user_optional)] = None,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: AsyncSession = Depends(get_async_db)
 ):
     """
     获取待复习的单词列表
 
     基于艾宾浩斯遗忘曲线，返回需要复习的单词
+    需要用户登录认证
     """
     import logging
     logger = logging.getLogger(__name__)
 
     try:
-        if not current_user:
-            logger.info("用户未登录，返回空复习列表")
-            return []
-
         logger.info(f"获取用户 {current_user.username} 的复习列表，限制 {limit} 条")
         records = await get_due_reviews(db, current_user.user_id, limit)
         logger.info(f"找到 {len(records)} 条待复习记录")

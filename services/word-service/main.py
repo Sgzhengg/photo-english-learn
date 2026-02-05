@@ -199,7 +199,7 @@ async def get_word_list(
     limit: int = Query(20, ge=1, le=100, description="返回的记录数"),
     tag_id: Optional[int] = Query(None, description="按标签筛选"),
     search: Optional[str] = Query(None, description="搜索单词"),
-    current_user: Annotated[Optional[User], Depends(get_current_user_optional)] = None,
+    current_user: Annotated[User, Depends(get_current_user)],
     db: AsyncSession = Depends(get_async_db)
 ):
     """
@@ -210,8 +210,6 @@ async def get_word_list(
     - **tag_id**: 按标签筛选（可选）
     - **search**: 搜索单词（可选，支持英文或中文模糊搜索）
     """
-    if not current_user:
-        return []
     query = select(UserWord).where(UserWord.user_id == current_user.user_id)
 
     # 标签筛选
@@ -272,7 +270,7 @@ async def get_word_list(
 @app.post("/add", response_model=UserWordResponse, tags=["Words"])
 async def add_word(
     word_data: UserWordCreate,
-    current_user: Annotated[Optional[User], Depends(get_current_user_optional)],
+    current_user: Annotated[User, Depends(get_current_user)],
     db: AsyncSession = Depends(get_async_db)
 ):
     """
@@ -287,15 +285,8 @@ async def add_word(
     - **example_sentence**: 例句（可选，来自 vision-service）
     - **example_translation**: 例句翻译（可选，来自 vision-service）
 
-    支持匿名用户（通过 X-Anonymous-User-ID 头）
+    需要用户登录认证
     """
-    # 检查用户是否已认证
-    if not current_user:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="用户未认证，请先登录或提供匿名用户 ID"
-        )
-
     # 检查是否已存在
     result = await db.execute(
         select(UserWord).where(

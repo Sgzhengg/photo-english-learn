@@ -10,22 +10,6 @@ const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000
 console.log('🔗 API_BASE_URL:', API_BASE_URL);
 
 // -----------------------------------------------------------------------------
-// Anonymous User ID (for development mode)
-// -----------------------------------------------------------------------------
-
-// Get or generate anonymous user ID for SKIP_AUTH mode
-function getAnonymousUserId(): string {
-  let anonymousId = localStorage.getItem('anonymous_user_id');
-  if (!anonymousId) {
-    // Generate unique ID: timestamp + random string
-    anonymousId = 'anon_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
-    localStorage.setItem('anonymous_user_id', anonymousId);
-    console.log('✅ Generated anonymous user ID:', anonymousId);
-  }
-  return anonymousId;
-}
-
-// -----------------------------------------------------------------------------
 // Types
 // -----------------------------------------------------------------------------
 
@@ -72,11 +56,6 @@ class ApiClient {
       headers['Authorization'] = `Bearer ${token}`;
     }
 
-    // Add anonymous user ID header for SKIP_AUTH mode
-    if (!token) {
-      headers['X-Anonymous-User-ID'] = getAnonymousUserId();
-    }
-
     try {
       const response = await fetch(url, {
         ...options,
@@ -85,9 +64,7 @@ class ApiClient {
 
       // Handle 401 Unauthorized - try to refresh token
       if (response.status === 401) {
-        // Debug: Log 401 error details
         console.error('❌ [API] 401 Unauthorized for:', endpoint);
-        console.error('❌ [API] Request headers:', headers);
 
         const refreshSuccess = await this.refreshToken();
         if (refreshSuccess) {
@@ -102,10 +79,11 @@ class ApiClient {
           });
           return await this.handleResponse<T>(retryResponse);
         }
-        // DEV MODE: 不跳转到登录页，静默失败
-        // this.clearTokens();
-        // window.location.href = '/login';
-        return { success: false, error: 'Authentication failed (dev mode).' };
+
+        // Token refresh failed, clear tokens and redirect to login
+        this.clearTokens();
+        window.location.href = '/login';
+        return { success: false, error: 'Authentication failed' };
       }
 
       return await this.handleResponse<T>(response);
@@ -270,9 +248,9 @@ export const authApi = {
     verificationCode: string;
     password: string;
   }) => {
-    // Backend expects 'username' field, not 'emailOrPhone'
+    // Backend expects 'emailOrPhone' field
     return api.post<AuthTokens & { user: import('@/types').User }>('/auth/register', {
-      username: data.emailOrPhone,  // Changed from emailOrPhone to username
+      emailOrPhone: data.emailOrPhone,
       verificationCode: data.verificationCode,
       password: data.password,
     });
