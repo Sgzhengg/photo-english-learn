@@ -199,6 +199,9 @@ export function PracticeReviewPage() {
 
     setPracticeResult(result);
 
+    // 设置错题队列，供"查看全部错题"功能使用
+    setWrongAnswersQueue(wrongAnswers);
+
     // 提交复习结果到后端（更新艾宾浩斯曲线）
     try {
       console.log('📝 提交复习结果到后端...');

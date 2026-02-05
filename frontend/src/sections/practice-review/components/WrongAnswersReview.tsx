@@ -261,7 +261,30 @@ export function WrongAnswersReview({
 
       {/* 主内容区 */}
       <div className="max-w-2xl mx-auto px-4 py-6">
-        {currentWord ? (
+        {wrongAnswersQueue.length === 0 ? (
+          /* 空队列状态 */
+          <div className="text-center py-16">
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-emerald-100 dark:bg-emerald-900/30 rounded-full mb-6">
+              <CheckCircle2 className="w-10 h-10 text-emerald-600 dark:text-emerald-400" />
+            </div>
+            <h2 className="text-2xl font-bold text-slate-900 dark:text-slate-100 mb-3" style={{ fontFamily: 'DM Sans, sans-serif' }}>
+              太棒了！
+            </h2>
+            <p className="text-slate-600 dark:text-slate-400 mb-2" style={{ fontFamily: 'Inter, sans-serif' }}>
+              暂无错题需要复习
+            </p>
+            <p className="text-sm text-slate-500 dark:text-slate-500" style={{ fontFamily: 'Inter, sans-serif' }}>
+              继续保持，你的英语词汇掌握得很好！
+            </p>
+            <button
+              onClick={onBackToHome}
+              className="mt-6 px-6 py-3 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl font-semibold transition-colors"
+              style={{ fontFamily: 'Inter, sans-serif' }}
+            >
+              返回首页
+            </button>
+          </div>
+        ) : currentWord ? (
           <>
             {/* 提示信息 */}
             <div className="mb-6 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200 dark:border-blue-800/50">
