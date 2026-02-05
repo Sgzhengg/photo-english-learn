@@ -21,6 +21,14 @@ services:
             value: photo-english-learn
 
   # ============================================
+  # Redis - 缓存和会话存储
+  # ============================================
+  - name: redis
+    type: Redis
+    description: "Redis Cache"
+    version: 7
+
+  # ============================================
   # API Gateway
   # ============================================
   - name: api-gateway
@@ -36,6 +44,7 @@ services:
       - ASR_SERVICE_URL=http://asr-service.zeabur.internal:8080
       - SKIP_AUTH=true
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - REDIS_URL=redis://redis.zeabur.internal:6379/0
     buildCommand: |
       pip install -r requirements.txt
     runCommand: uvicorn services.api-gateway.main:app --host 0.0.0.0 --port $PORT
@@ -59,6 +68,8 @@ services:
     ports:
       - port: 8001
         public: false
+    env:
+      - REDIS_URL=redis://redis.zeabur.internal:6379/0
 
   - name: vision-service
     type: Worker
@@ -70,7 +81,8 @@ services:
       - port: 8003
         public: false
     env:
-      - OPENROUTER_API_KEY=${OPENROUTER_API_KEY}
+      - DEEPINFRA_API_KEY=${DEEPINFRA_API_KEY}
+      - REDIS_URL=redis://redis.zeabur.internal:6379/0
 
   - name: word-service
     type: Worker
@@ -81,6 +93,8 @@ services:
     ports:
       - port: 8004
         public: false
+    env:
+      - REDIS_URL=redis://redis.zeabur.internal:6379/0
 
   - name: practice-service
     type: Worker
@@ -91,6 +105,8 @@ services:
     ports:
       - port: 8005
         public: false
+    env:
+      - REDIS_URL=redis://redis.zeabur.internal:6379/0
 
   - name: tts-service
     type: Worker
@@ -101,6 +117,8 @@ services:
     ports:
       - port: 8006
         public: false
+    env:
+      - REDIS_URL=redis://redis.zeabur.internal:6379/0
 
   - name: asr-service
     type: Worker
@@ -113,6 +131,7 @@ services:
         public: false
     env:
       - GROQ_API_KEY=${GROQ_API_KEY}
+      - REDIS_URL=redis://redis.zeabur.internal:6379/0
 
 # ============================================
 # 全局环境变量
@@ -120,5 +139,6 @@ services:
 env:
   - SKIP_AUTH=true
   - DATABASE_URL=${DATABASE_URL}
-  - REDIS_URL=${REDIS_URL}
+  - REDIS_URL=redis://redis.zeabur.internal:6379/0
   - GROQ_API_KEY=${GROQ_API_KEY}
+  - DEEPINFRA_API_KEY=${DEEPINFRA_API_KEY}
