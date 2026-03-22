@@ -20,11 +20,8 @@ import {
   Camera,
   Check,
   AlertCircle,
-  Lock,
-  Eye,
-  EyeOff,
-  X,
   ArrowLeft,
+  RefreshCw,
 } from 'lucide-react';
 
 export function SettingsPage() {
@@ -36,16 +33,6 @@ export function SettingsPage() {
   const [saveMessage, setSaveMessage] = useState('');
   const [showVersionInfo, setShowVersionInfo] = useState(false);
   const [notificationsEnabled, setNotificationsEnabled] = useState(false);
-
-  // Password change states
-  const [showPasswordModal, setShowPasswordModal] = useState(false);
-  const [currentPassword, setCurrentPassword] = useState('');
-  const [newPassword, setNewPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
-  const [showNewPassword, setShowNewPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [passwordError, setPasswordError] = useState('');
 
   // Profile editing states
   const [isEditingProfile, setIsEditingProfile] = useState(false);
@@ -214,75 +201,6 @@ export function SettingsPage() {
   const showSuccess = (message: string) => {
     setSaveMessage(message);
     setTimeout(() => setSaveMessage(''), 3000);
-  };
-
-  // Handle password change
-  const handleChangePassword = () => {
-    setShowPasswordModal(true);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setPasswordError('');
-  };
-
-  const handleClosePasswordModal = () => {
-    setShowPasswordModal(false);
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
-    setPasswordError('');
-  };
-
-  const handleSubmitPasswordChange = async () => {
-    setPasswordError('');
-
-    // Validation
-    if (!currentPassword) {
-      setPasswordError('请输入当前密码');
-      return;
-    }
-
-    if (!newPassword) {
-      setPasswordError('请输入新密码');
-      return;
-    }
-
-    if (newPassword.length < 6) {
-      setPasswordError('新密码至少需要 6 个字符');
-      return;
-    }
-
-    if (newPassword !== confirmPassword) {
-      setPasswordError('两次输入的新密码不一致');
-      return;
-    }
-
-    if (currentPassword === newPassword) {
-      setPasswordError('新密码不能与当前密码相同');
-      return;
-    }
-
-    setIsSaving(true);
-    try {
-      // Call API to change password
-      const response = await userApi.changePassword({
-        currentPassword,
-        newPassword,
-      });
-
-      if (!response.success) {
-        setPasswordError(response.error || '密码修改失败');
-        return;
-      }
-
-      showSuccess('密码已成功修改');
-      handleClosePasswordModal();
-    } catch (error) {
-      console.error('Failed to change password:', error);
-      setPasswordError(error instanceof Error ? error.message : '密码修改失败，请检查当前密码是否正确');
-    } finally {
-      setIsSaving(false);
-    }
   };
 
   if (!user) return null;
@@ -456,28 +374,6 @@ export function SettingsPage() {
               )}
             </div>
 
-            {/* Change Password */}
-            <div className="p-4">
-              <button
-                onClick={handleChangePassword}
-                className="flex items-center justify-between w-full group"
-              >
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-lg bg-slate-100 dark:bg-slate-700">
-                    <Lock className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-                  </div>
-                  <div className="text-left">
-                    <p className="text-sm font-medium text-slate-900 dark:text-slate-100" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                      修改密码
-                    </p>
-                    <p className="text-sm text-slate-600 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
-                      更改您的登录密码
-                    </p>
-                  </div>
-                </div>
-                <ChevronRight className="w-5 h-5 text-slate-400 group-hover:text-slate-600 dark:group-hover:text-slate-300 transition-colors" />
-              </button>
-            </div>
           </div>
         </section>
 
@@ -757,165 +653,6 @@ export function SettingsPage() {
         </section>
 
       </div>
-
-      {/* Password Change Modal */}
-      {showPasswordModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50">
-          <div className="bg-white dark:bg-slate-800 rounded-2xl shadow-2xl max-w-md w-full max-h-[90vh] overflow-y-auto">
-            {/* Header */}
-            <div className="sticky top-0 bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700 px-6 py-4 flex items-center justify-between">
-              <h2 className="text-xl font-bold text-slate-900 dark:text-slate-100" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                修改密码
-              </h2>
-              <button
-                onClick={handleClosePasswordModal}
-                className="p-2 rounded-lg hover:bg-slate-100 dark:hover:bg-slate-700 transition-colors"
-              >
-                <X className="w-5 h-5 text-slate-600 dark:text-slate-400" />
-              </button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6 space-y-4">
-              {/* Error Message */}
-              {passwordError && (
-                <div className="flex items-start gap-2 p-3 bg-red-50 dark:bg-red-900/20 rounded-lg">
-                  <AlertCircle className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 shrink-0" />
-                  <p className="text-sm text-red-800 dark:text-red-300" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    {passwordError}
-                  </p>
-                </div>
-              )}
-
-              {/* Current Password */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                  <Lock className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  当前密码
-                </label>
-                <div className="relative">
-                  <input
-                    type={showCurrentPassword ? 'text' : 'password'}
-                    value={currentPassword}
-                    onChange={(e) => setCurrentPassword(e.target.value)}
-                    placeholder="输入当前密码"
-                    className="w-full px-4 py-3 pr-12 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowCurrentPassword(!showCurrentPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                  >
-                    {showCurrentPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* New Password */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                  <Lock className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  新密码
-                </label>
-                <div className="relative">
-                  <input
-                    type={showNewPassword ? 'text' : 'password'}
-                    value={newPassword}
-                    onChange={(e) => setNewPassword(e.target.value)}
-                    placeholder="输入新密码（至少 6 个字符）"
-                    className="w-full px-4 py-3 pr-12 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowNewPassword(!showNewPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                  >
-                    {showNewPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1" style={{ fontFamily: 'Inter, sans-serif' }}>
-                  密码至少需要 6 个字符
-                </p>
-              </div>
-
-              {/* Confirm Password */}
-              <div>
-                <label className="flex items-center gap-2 text-sm font-medium text-slate-900 dark:text-slate-100 mb-2" style={{ fontFamily: 'DM Sans, sans-serif' }}>
-                  <Lock className="w-4 h-4 text-slate-600 dark:text-slate-400" />
-                  确认新密码
-                </label>
-                <div className="relative">
-                  <input
-                    type={showConfirmPassword ? 'text' : 'password'}
-                    value={confirmPassword}
-                    onChange={(e) => setConfirmPassword(e.target.value)}
-                    placeholder="再次输入新密码"
-                    className="w-full px-4 py-3 pr-12 rounded-lg border border-slate-300 dark:border-slate-600 bg-white dark:bg-slate-900 text-slate-900 dark:text-slate-100 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    style={{ fontFamily: 'Inter, sans-serif' }}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowConfirmPassword(!showConfirmPassword)}
-                    className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 dark:hover:text-slate-300"
-                  >
-                    {showConfirmPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
-                  </button>
-                </div>
-              </div>
-
-              {/* Password Strength Indicator */}
-              {newPassword && (
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between text-xs" style={{ fontFamily: 'Inter, sans-serif' }}>
-                    <span className="text-slate-600 dark:text-slate-400">密码强度</span>
-                    <span className={`font-medium ${
-                      newPassword.length < 6
-                        ? 'text-red-600 dark:text-red-400'
-                        : newPassword.length < 10
-                        ? 'text-amber-600 dark:text-amber-400'
-                        : 'text-emerald-600 dark:text-emerald-400'
-                    }`}>
-                      {newPassword.length < 6 ? '弱' : newPassword.length < 10 ? '中等' : '强'}
-                    </span>
-                  </div>
-                  <div className="h-2 bg-slate-200 dark:bg-slate-700 rounded-full overflow-hidden">
-                    <div
-                      className={`h-full transition-all duration-300 ${
-                        newPassword.length < 6
-                          ? 'w-1/3 bg-red-500'
-                          : newPassword.length < 10
-                          ? 'w-2/3 bg-amber-500'
-                          : 'w-full bg-emerald-500'
-                      }`}
-                    />
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Footer */}
-            <div className="sticky bottom-0 bg-white dark:bg-slate-800 border-t border-slate-200 dark:border-slate-700 px-6 py-4 flex gap-3">
-              <button
-                onClick={handleClosePasswordModal}
-                className="flex-1 px-4 py-3 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 text-slate-700 dark:text-slate-300 rounded-xl font-semibold transition-colors"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                取消
-              </button>
-              <button
-                onClick={handleSubmitPasswordChange}
-                disabled={isSaving || !currentPassword || !newPassword || !confirmPassword}
-                className="flex-1 px-4 py-3 bg-indigo-600 hover:bg-indigo-700 disabled:bg-slate-300 dark:disabled:bg-slate-700 disabled:text-slate-500 text-white rounded-xl font-semibold transition-colors"
-                style={{ fontFamily: 'Inter, sans-serif' }}
-              >
-                {isSaving ? '提交中...' : '确认修改'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }

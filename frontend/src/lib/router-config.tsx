@@ -1,24 +1,15 @@
 // =============================================================================
-// PhotoEnglish - Router Configuration
+// PhotoEnglish - Router Configuration (Anonymous Device ID Login)
 // =============================================================================
 
 import { createBrowserRouter, redirect } from 'react-router-dom';
 import { AppShell } from '@/components/shell/AppShell';
 
 // -----------------------------------------------------------------------------
-// Auth Pages (Lazy loaded)
+// App Pages (Lazy loaded)
 // -----------------------------------------------------------------------------
 
 import { lazy } from 'react';
-
-const LoginPage = lazy(() => import('@/components/auth/LoginPage').then(m => ({ default: m.LoginPage })));
-const RegisterPage = lazy(() => import('@/components/auth/RegisterPage').then(m => ({ default: m.RegisterPage })));
-const ForgotPasswordPage = lazy(() => import('@/components/auth/ForgotPasswordPage').then(m => ({ default: m.ForgotPasswordPage })));
-const OnboardingPage = lazy(() => import('@/components/auth/OnboardingPage').then(m => ({ default: m.OnboardingPage })));
-
-// -----------------------------------------------------------------------------
-// Placeholder Pages (for later milestones)
-// -----------------------------------------------------------------------------
 
 const PhotoCapturePage = lazy(() => import('@/components/photo-capture/PhotoCapturePage').then(m => ({ default: m.PhotoCapturePage })));
 const VocabularyLibraryPage = lazy(() => import('@/components/vocabulary-library/VocabularyLibraryPage').then(m => ({ default: m.VocabularyLibraryPage })));
@@ -28,32 +19,14 @@ const ProgressDashboardPage = lazy(() => import('@/components/progress-dashboard
 const SettingsPage = lazy(() => import('@/components/settings/SettingsPage').then(m => ({ default: m.SettingsPage })));
 
 // -----------------------------------------------------------------------------
-// Route Loader - Check authentication
-// -----------------------------------------------------------------------------
-
-const protectedRouteLoader = () => {
-  const token = localStorage.getItem('access_token');
-  if (!token) {
-    return redirect('/login');
-  }
-  return null;
-};
-
-// -----------------------------------------------------------------------------
-// Router Configuration
+// Router Configuration (No authentication required)
 // -----------------------------------------------------------------------------
 
 export const router = createBrowserRouter([
-  // Redirect root to appropriate page
+  // Redirect root to main app
   {
     path: '/',
-    loader: () => {
-      const token = localStorage.getItem('access_token');
-      if (!token) {
-        return redirect('/login');
-      }
-      return redirect('/app/photo-capture');
-    },
+    loader: () => redirect('/app/photo-capture'),
   },
 
   // =============================================================================
@@ -82,38 +55,12 @@ export const router = createBrowserRouter([
   },
 
   // =============================================================================
-  // Auth Routes (no shell)
-  // =============================================================================
-
-  {
-    path: '/login',
-    element: <LoginPage />,
-  },
-
-  {
-    path: '/register',
-    element: <RegisterPage />,
-  },
-
-  {
-    path: '/forgot-password',
-    element: <ForgotPasswordPage />,
-  },
-
-  {
-    path: '/onboarding',
-    element: <OnboardingPage />,
-    loader: protectedRouteLoader,
-  },
-
-  // =============================================================================
   // App Routes (with shell)
   // =============================================================================
 
   {
     path: '/app',
     element: <AppShell />,
-    loader: protectedRouteLoader,
     children: [
       {
         index: true,

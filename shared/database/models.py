@@ -23,9 +23,11 @@ class User(Base):
     user_id = Column(Integer, primary_key=True, autoincrement=True)
     username = Column(String(50), unique=True, nullable=False, index=True)
     email = Column(String(100), unique=True, nullable=False, index=True)
-    password_hash = Column(String(255), nullable=False)
+    password_hash = Column(String(255), nullable=True)  # 改为可选，支持匿名用户
     nickname = Column(String(50))
     avatar_url = Column(Text)  # 改为 Text 类型，支持存储 base64 图片数据
+    device_id = Column(String(255), unique=True, nullable=True, index=True)  # 设备ID，用于匿名登录
+    is_anonymous = Column(Integer, default=0)  # 是否为匿名用户：0=否，1=是
     created_at = Column(DateTime, default=utc_now)
     updated_at = Column(DateTime, default=utc_now, onupdate=utc_now)
 

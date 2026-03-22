@@ -62,6 +62,77 @@ async def health():
     return {"status": "ok", "service": "auth"}
 
 
+@app.post("/anonymous-login", tags=["Auth"])
+async def anonymous_login(
+    request_data: dict,
+    db: AsyncSession = Depends(get_async_db)
+):
+    """
+    匿名登录 - 基于设备ID自动登录
+
+    - **deviceId**: 设备唯一标识符
+
+    流程：
+    1. 检查设备ID是否已存在用户
+    2. 如果存在，返回该用户的token
+    3. 如果不存在，创建新的匿名用户
+    """
+    import logging
+    import uuid
+    logger = logging.getLogger(__name__)
+
+    device_id = request_data.get("deviceId")
+
+    if not device_id:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="设备ID不能为空"
+        )
+
+    # 查找是否已存在该设备的用户
+    result = await db.execute(select(User).where(User.device_id == device_id))
+    user = result.scalar_one_or_none()
+
+    # 如果不存在，创建新的匿名用户
+    if not user:
+        # 生成唯一的用户名和邮箱
+        unique_id = str(uuid.uuid4())[:8]
+        username = f"anonymous_{unique_id}"
+        email = f"{username}@anonymous.local"
+
+        # 创建匿名用户
+        new_user = User(
+            username=username,
+            email=email,
+            nickname=f"用户{unique_id}",
+            device_id=device_id,
+            is_anonymous=1,
+            password_hash=None  # 匿名用户没有密码
+        )
+        db.add(new_user)
+        await db.commit()
+        await db.refresh(new_user)
+
+        logger.info(f"创建新匿名用户: {username}, device_id: {device_id}")
+        user = new_user
+    else:
+        logger.info(f"匿名用户登录: {user.username}, device_id: {device_id}")
+
+    # 生成 JWT Token
+    access_token = create_access_token(
+        data={"sub": str(user.user_id), "username": user.username},
+        secret_key=SECRET_KEY,
+        algorithm=ALGORITHM,
+        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    )
+
+    return success_response(data={
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(user).model_dump()
+    })
+
+
 @app.post("/send-code", tags=["Auth"])
 @limit_auth(max_requests=10, window_seconds=60)  # 发送验证码限流：10 次/分钟
 async def send_verification_code(

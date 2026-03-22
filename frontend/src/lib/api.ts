@@ -214,6 +214,25 @@ export const api = new ApiClient(API_BASE_URL);
 
 export const authApi = {
   /**
+   * Anonymous login using device ID
+   * POST /auth/anonymous-login
+   */
+  anonymousLogin: async (deviceId: string) => {
+    const result = await api.post<AuthTokens & { user: import('@/types').User }>('/auth/anonymous-login', {
+      deviceId,
+    });
+
+    if (!result.success) {
+      console.error('❌ [API] Anonymous login failed!');
+      console.error('❌ [API] Error details:', result.error);
+    } else {
+      console.log('✅ [API] Anonymous login successful!');
+    }
+
+    return result;
+  },
+
+  /**
    * User login
    * POST /auth/login
    */

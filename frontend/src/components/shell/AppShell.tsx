@@ -1,21 +1,27 @@
 // =============================================================================
-// PhotoEnglish - App Shell (Navigation Wrapper)
+// PhotoEnglish - App Shell (Navigation Wrapper) - Anonymous User Mode
 // =============================================================================
 
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { AppShell as AppShellUI } from '@/shell/components/AppShell';
 import { useAuth } from '@/contexts/AuthContext';
+import { resetDeviceId } from '@/lib/device-id';
 
 export function AppShell() {
-  const { user, logout } = useAuth();
+  const { user, anonymousLogin } = useAuth();
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Handle logout with navigation
-  const handleLogout = async () => {
-    await logout();
-    // Navigate to login page after logout
-    navigate('/login');
+  // Handle reset account (for anonymous users)
+  const handleResetAccount = async () => {
+    if (confirm('确定要重置账户吗？这将清除所有学习数据！')) {
+      // Clear device ID
+      resetDeviceId();
+      // Re-login with new device ID
+      await anonymousLogin();
+      // Navigate to home
+      navigate('/app/photo-capture');
+    }
   };
 
   // Define navigation items
@@ -60,7 +66,7 @@ export function AppShell() {
         // Navigate using React Router
         navigate(href);
       }}
-      onLogout={handleLogout}
+      onLogout={handleResetAccount}
       onSettings={() => {
         navigate('/app/settings');
       }}

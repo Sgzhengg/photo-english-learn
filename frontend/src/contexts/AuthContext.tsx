@@ -1,11 +1,12 @@
 // =============================================================================
-// PhotoEnglish - Authentication Context
+// PhotoEnglish - Authentication Context (Anonymous Device ID Login)
 // =============================================================================
 
 import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import type { User } from '@/types';
 import { authApi } from '@/lib/api';
+import { getOrCreateDeviceId } from '@/lib/device-id';
 
 // -----------------------------------------------------------------------------
 // Types
@@ -15,6 +16,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   isAuthenticated: boolean;
+  anonymousLogin: () => Promise<void>;
   login: (emailOrPhone: string, password: string, keepLoggedIn?: boolean) => Promise<void>;
   register: (emailOrPhone: string, verificationCode: string, password: string) => Promise<void>;
   logout: () => Promise<void>;
@@ -35,31 +37,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user is logged in on mount
+  // Auto anonymous login on mount
   useEffect(() => {
-    const checkAuth = async () => {
+    const autoLogin = async () => {
       const token = localStorage.getItem('access_token');
 
       if (token) {
+        // Verify existing token
         try {
           const response = await authApi.getCurrentUser();
           if (response.success && response.data) {
             setUser(response.data);
-          } else {
-            // Token invalid, clear it
-            localStorage.removeItem('access_token');
-            localStorage.removeItem('refresh_token');
-            localStorage.removeItem('expires_at');
+            setIsLoading(false);
+            return;
           }
         } catch (error) {
-          console.error('Auth check failed:', error);
+          console.error('Token verification failed:', error);
+          // Clear invalid tokens
+          localStorage.removeItem('access_token');
+          localStorage.removeItem('refresh_token');
+          localStorage.removeItem('expires_at');
         }
       }
 
-      setIsLoading(false);
+      // No valid token, perform anonymous login
+      try {
+        const deviceId = getOrCreateDeviceId();
+        const response = await authApi.anonymousLogin(deviceId);
+
+        if (response.success && response.data) {
+          const { access_token, user: userData } = response.data as any;
+          localStorage.setItem('access_token', access_token);
+          localStorage.setItem('refresh_token', access_token);
+          setUser(userData);
+          console.log('✅ [Auth] Anonymous login successful:', userData?.username);
+        }
+      } catch (error) {
+        console.error('❌ [Auth] Anonymous login failed:', error);
+      } finally {
+        setIsLoading(false);
+      }
     };
 
-    checkAuth();
+    autoLogin();
   }, []);
 
   const login = async (emailOrPhone: string, password: string, keepLoggedIn = false) => {
@@ -142,10 +162,31 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  const anonymousLogin = async () => {
+    const deviceId = getOrCreateDeviceId();
+    const response = await authApi.anonymousLogin(deviceId);
+
+    if (!response.success || !response.data) {
+      const errorMsg = response.error || 'Anonymous login failed';
+      console.error('❌ [Auth] Anonymous login failed:', errorMsg);
+      throw new Error(errorMsg);
+    }
+
+    const data = response.data as any;
+    const { access_token, user: userData } = data;
+
+    localStorage.setItem('access_token', access_token);
+    localStorage.setItem('refresh_token', access_token);
+    setUser(userData);
+
+    console.log('✅ [Auth] Anonymous login successful:', userData?.username);
+  };
+
   const value: AuthContextType = {
     user,
     isLoading,
     isAuthenticated: !!user,
+    anonymousLogin,
     login,
     register,
     logout,
