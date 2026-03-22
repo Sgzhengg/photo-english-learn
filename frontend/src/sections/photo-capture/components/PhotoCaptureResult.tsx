@@ -9,6 +9,7 @@ export function PhotoCaptureResult({
   isCapturing,
   currentWordIndex,
   isPlaying,
+  savingWordId,
   onCapture,
   onPlayWordPronunciation,
   onSaveWord,
@@ -114,11 +115,13 @@ export function PhotoCaptureResult({
       <div className="space-y-3">
         {currentPhoto.recognizedWords.map((word) => {
           const isHighlight = isPlaying && word.positionInSentence === currentWordIndex
+          const isSaving = savingWordId === word.id
           return (
             <WordCard
               key={word.id}
               word={word}
               isHighlight={isHighlight}
+              isSaving={isSaving}
               onPlayPronunciation={onPlayWordPronunciation}
               onSave={onSaveWord}
               onUnsave={onUnsaveWord}

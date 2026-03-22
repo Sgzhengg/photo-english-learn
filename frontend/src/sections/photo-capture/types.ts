@@ -57,6 +57,8 @@ export interface PhotoCaptureProps {
   currentWordIndex: number
   /** TTS 是否正在播放 */
   isPlaying: boolean
+  /** 当前正在保存的单词ID */
+  savingWordId?: string | null
   /** 当用户点击拍照按钮时调用 */
   onCapture?: () => void
   /** 当用户点击单词发音按钮时调用 */

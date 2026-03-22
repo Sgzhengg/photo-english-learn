@@ -1,9 +1,10 @@
-import { Volume2, Bookmark, BookmarkCheck } from 'lucide-react'
+import { Volume2, Bookmark, BookmarkCheck, Loader2 } from 'lucide-react'
 import type { RecognizedWord } from '../types'
 
 interface WordCardProps {
   word: RecognizedWord
   isHighlight?: boolean
+  isSaving?: boolean
   onPlayPronunciation?: (wordId: string) => void
   onSave?: (wordId: string) => void
   onUnsave?: (wordId: string) => void
@@ -12,6 +13,7 @@ interface WordCardProps {
 export function WordCard({
   word,
   isHighlight = false,
+  isSaving = false,
   onPlayPronunciation,
   onSave,
   onUnsave,
@@ -75,6 +77,14 @@ export function WordCard({
               aria-label="取消保存"
             >
               <BookmarkCheck className="w-5 h-5" />
+            </button>
+          ) : isSaving ? (
+            <button
+              disabled
+              className="p-2.5 rounded-xl bg-indigo-50 text-indigo-600 dark:bg-indigo-900/20 dark:text-indigo-400 cursor-not-allowed"
+              aria-label="保存中"
+            >
+              <Loader2 className="w-5 h-5 animate-spin" />
             </button>
           ) : (
             <button

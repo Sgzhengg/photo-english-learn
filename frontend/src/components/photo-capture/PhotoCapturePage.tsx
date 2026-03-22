@@ -11,6 +11,7 @@ import { photoApi, vocabularyApi } from '@/lib/api';
 export function PhotoCapturePage() {
   const [currentPhoto, setCurrentPhoto] = useState<Photo | null>(null);
   const [isCapturing, setIsCapturing] = useState(false);
+  const [savingWordId, setSavingWordId] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Handle file selection
@@ -86,47 +87,28 @@ export function PhotoCapturePage() {
     window.speechSynthesis.speak(utterance);
   };
 
-  // Handle save word
+  // Handle save word (优化版：使用快速API，跳过lookup步骤)
   const handleSaveWord = async (wordId: string) => {
     if (!currentPhoto) return;
 
-    // Find the word to get its English word text and details from vision-service
     const word = currentPhoto.recognizedWords.find(w => w.id === wordId);
     if (!word) return;
 
+    setSavingWordId(wordId);
+
     try {
-      // Step 1: Lookup the word to get the real word_id from database
-      console.log('🔍 [Step 1] Looking up word:', word.word);
-      const lookupResult = await vocabularyApi.lookupWord(word.word);
-      console.log('📥 Lookup result:', lookupResult);
+      console.log('💾 [快速保存] 开始保存单词:', word.word);
 
-      if (!lookupResult.success || !lookupResult.data) {
-        console.error('❌ Failed to lookup word:', lookupResult.error);
-        alert(`查询单词失败: ${lookupResult.error || '未知错误'}`);
-        return;
-      }
-
-      const realWordId = lookupResult.data.word_id;
-      console.log('✅ Found word_id:', realWordId);
-
-      // Step 2: Add the word to vocabulary using the real word_id
-      // Pass vision-service translation data to avoid re-calling translation API
-      console.log('💾 [Step 2] Vision-service data:', {
+      // 使用新的快速保存API，直接使用vision数据，无需lookup
+      const saveResult = await vocabularyApi.saveWordWithVisionData({
         word: word.word,
-        definition: word.definition,
+        chinese_meaning: word.definition,
         phonetic: word.phonetic,
       });
-      const addResult = await vocabularyApi.addWord(
-        realWordId,
-        undefined, // sceneId
-        {
-          chinese_meaning: word.definition, // vision-service 提供的中文翻译
-          phonetic_us: word.phonetic, // vision-service 提供的音标
-        }
-      );
-      console.log('📥 [Word Save] Add result:', JSON.stringify(addResult, null, 2));
 
-      if (addResult.success) {
+      console.log('📥 保存结果:', saveResult);
+
+      if (saveResult.success && saveResult.data) {
         // Update local state
         setCurrentPhoto({
           ...currentPhoto,
@@ -134,15 +116,16 @@ export function PhotoCapturePage() {
             w.id === wordId ? { ...w, isSaved: true } : w
           ),
         });
-        console.log('✅ Word saved successfully! Please check Vocabulary Library page.');
-        alert('✅ 单词已保存到生词库！');
+        console.log('✅ 单词保存成功！');
       } else {
-        console.error('❌ Failed to save word:', addResult.error);
-        alert(`保存失败: ${addResult.error || '未知错误'}`);
+        console.error('❌ 保存失败:', saveResult.error);
+        alert(`保存失败: ${saveResult.error || '未知错误'}`);
       }
     } catch (error) {
-      console.error('Save word error:', error);
+      console.error('保存单词错误:', error);
       alert(`保存失败: ${error instanceof Error ? error.message : '网络错误'}`);
+    } finally {
+      setSavingWordId(null);
     }
   };
 
@@ -232,6 +215,7 @@ export function PhotoCapturePage() {
           isCapturing={isCapturing}
           currentWordIndex={0}
           isPlaying={false}
+          savingWordId={savingWordId}
           onCapture={handleCapture}
           onPlayWordPronunciation={handlePlayWordPronunciation}
           onSaveWord={handleSaveWord}

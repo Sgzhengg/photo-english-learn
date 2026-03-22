@@ -454,6 +454,19 @@ export const vocabularyApi = {
     }),
 
   /**
+   * Save word with vision data (fast, no lookup needed)
+   * POST /words/save-with-vision-data
+   * 使用vision-service提供的数据直接保存单词，无需先查询word_id
+   */
+  saveWordWithVisionData: (data: {
+    word: string;
+    chinese_meaning?: string;
+    phonetic?: string;
+    scene_id?: number;
+  }) =>
+    api.post<import('@/types/api').UserWordResponse>('/words/save-with-vision-data', data),
+
+  /**
    * Get word details
    * GET /words/:wordId
    */
