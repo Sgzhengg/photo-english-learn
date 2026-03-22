@@ -13,19 +13,33 @@
 5. 执行以下SQL命令：
 
 ```sql
--- 检查当前表结构
-SHOW COLUMNS FROM users;
+-- 步骤1：添加 device_id 列（如果不存在）
+ALTER TABLE users ADD COLUMN IF NOT EXISTS device_id VARCHAR(255) UNIQUE DEFAULT NULL;
+CREATE INDEX IF NOT EXISTS idx_device_id ON users(device_id);
 
--- 添加device_id列（如果不存在）
-ALTER TABLE users ADD COLUMN device_id VARCHAR(255) UNIQUE DEFAULT NULL;
-CREATE INDEX idx_device_id ON users(device_id);
+-- 步骤2：修改 password_hash 为允许 NULL（重要！）
+ALTER TABLE users ALTER COLUMN password_hash DROP NOT NULL;
 
--- 添加is_anonymous列（如果不存在）
-ALTER TABLE users ADD COLUMN is_anonymous INT DEFAULT 0;
+-- 步骤3：添加 is_anonymous 列（如果不存在）
+DO $$
+BEGIN
+    IF NOT EXISTS (
+        SELECT 1 FROM information_schema.columns
+        WHERE table_name = 'users' AND column_name = 'is_anonymous'
+    ) THEN
+        ALTER TABLE users ADD COLUMN is_anonymous INT DEFAULT 0;
+    END IF;
+END
+$$;
 
--- 验证迁移结果
-SHOW COLUMNS FROM users;
+-- 步骤4：验证迁移结果
+SELECT column_name, data_type, is_nullable
+FROM information_schema.columns
+WHERE table_name = 'users'
+ORDER BY ordinal_position;
 ```
+
+**预期结果**：应该看到 `password_hash` 的 `is_nullable` 为 `YES`。
 
 ### 方法2：使用迁移脚本
 
