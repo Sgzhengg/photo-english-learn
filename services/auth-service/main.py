@@ -62,6 +62,48 @@ async def health():
     return {"status": "ok", "service": "auth"}
 
 
+@app.get("/health/db", tags=["Health"])
+async def check_database(db: AsyncSession = Depends(get_async_db)):
+    """检查数据库连接和表结构"""
+    import logging
+    logger = logging.getLogger(__name__)
+
+    try:
+        # 测试数据库连接
+        result = await db.execute(select(User).limit(1))
+        users = result.scalars().all()
+
+        # 检查device_id字段是否存在
+        from sqlalchemy import inspect, text
+        inspector = inspect(db.bind)
+        columns = [col['name'] for col in inspector.get_columns('users')]
+
+        has_device_id = 'device_id' in columns
+        has_is_anonymous = 'is_anonymous' in columns
+
+        logger.info(f"数据库检查: columns={columns}")
+
+        return {
+            "status": "ok",
+            "database": "connected",
+            "users_table_exists": True,
+            "user_count": len(users),
+            "columns": columns,
+            "has_device_id": has_device_id,
+            "has_is_anonymous": has_is_anonymous,
+            "migration_needed": not (has_device_id and has_is_anonymous)
+        }
+    except Exception as e:
+        logger.error(f"数据库检查失败: {str(e)}")
+        import traceback
+        logger.error(traceback.format_exc())
+        return {
+            "status": "error",
+            "database": "disconnected",
+            "error": str(e)
+        }
+
+
 @app.post("/anonymous-login", tags=["Auth"])
 async def anonymous_login(
     request_data: dict,
@@ -79,58 +121,87 @@ async def anonymous_login(
     """
     import logging
     import uuid
+    import traceback
     logger = logging.getLogger(__name__)
 
-    device_id = request_data.get("deviceId")
+    try:
+        device_id = request_data.get("deviceId")
 
-    if not device_id:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="设备ID不能为空"
+        if not device_id:
+            logger.warning("匿名登录失败：设备ID为空")
+            return success_response(
+                code=-1,
+                message="设备ID不能为空",
+                data=None
+            )
+
+        logger.info(f"匿名登录请求: device_id={device_id}")
+
+        # 查找是否已存在该设备的用户
+        result = await db.execute(select(User).where(User.device_id == device_id))
+        user = result.scalar_one_or_none()
+
+        # 如果不存在，创建新的匿名用户
+        if not user:
+            try:
+                # 生成唯一的用户名和邮箱
+                unique_id = str(uuid.uuid4())[:8]
+                username = f"anonymous_{unique_id}"
+                email = f"{username}@anonymous.local"
+
+                logger.info(f"创建新匿名用户: username={username}, device_id={device_id}")
+
+                # 创建匿名用户
+                new_user = User(
+                    username=username,
+                    email=email,
+                    nickname=f"用户{unique_id}",
+                    device_id=device_id,
+                    is_anonymous=1,
+                    password_hash=None  # 匿名用户没有密码
+                )
+                db.add(new_user)
+                await db.commit()
+                await db.refresh(new_user)
+
+                logger.info(f"新匿名用户创建成功: user_id={new_user.user_id}")
+                user = new_user
+            except Exception as e:
+                logger.error(f"创建匿名用户失败: {str(e)}")
+                logger.error(traceback.format_exc())
+                await db.rollback()
+                return success_response(
+                    code=-1,
+                    message=f"创建用户失败: {str(e)}",
+                    data=None
+                )
+        else:
+            logger.info(f"匿名用户登录: username={user.username}, device_id={device_id}")
+
+        # 生成 JWT Token
+        access_token = create_access_token(
+            data={"sub": str(user.user_id), "username": user.username},
+            secret_key=SECRET_KEY,
+            algorithm=ALGORITHM,
+            expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
         )
 
-    # 查找是否已存在该设备的用户
-    result = await db.execute(select(User).where(User.device_id == device_id))
-    user = result.scalar_one_or_none()
+        logger.info(f"匿名登录成功: user_id={user.user_id}, username={user.username}")
 
-    # 如果不存在，创建新的匿名用户
-    if not user:
-        # 生成唯一的用户名和邮箱
-        unique_id = str(uuid.uuid4())[:8]
-        username = f"anonymous_{unique_id}"
-        email = f"{username}@anonymous.local"
+        return success_response(data={
+            "access_token": access_token,
+            "token_type": "bearer",
+            "user": UserResponse.model_validate(user).model_dump()
+        })
 
-        # 创建匿名用户
-        new_user = User(
-            username=username,
-            email=email,
-            nickname=f"用户{unique_id}",
-            device_id=device_id,
-            is_anonymous=1,
-            password_hash=None  # 匿名用户没有密码
+    except Exception as e:
+        logger.error(f"匿名登录异常: {str(e)}")
+        logger.error(traceback.format_exc())
+        return success_response(
+            code=-1,
+            message=f"登录失败: {str(e)}",
+            data=None
         )
-        db.add(new_user)
-        await db.commit()
-        await db.refresh(new_user)
-
-        logger.info(f"创建新匿名用户: {username}, device_id: {device_id}")
-        user = new_user
-    else:
-        logger.info(f"匿名用户登录: {user.username}, device_id: {device_id}")
-
-    # 生成 JWT Token
-    access_token = create_access_token(
-        data={"sub": str(user.user_id), "username": user.username},
-        secret_key=SECRET_KEY,
-        algorithm=ALGORITHM,
-        expires_delta=timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
-    )
-
-    return success_response(data={
-        "access_token": access_token,
-        "token_type": "bearer",
-        "user": UserResponse.model_validate(user).model_dump()
-    })
 
 
 @app.post("/send-code", tags=["Auth"])
