@@ -203,14 +203,22 @@ async def get_word_list(
     search: Optional[str] = Query(None, description="搜索单词")
 ):
     """
-    获取用户的生词列表
+    获取用户的生词列表（优化版：解决N+1查询问题）
 
     - **skip**: 跳过的记录数（分页）
     - **limit**: 返回的记录数（最大 100）
     - **tag_id**: 按标签筛选（可选）
     - **search**: 搜索单词（可选，支持英文或中文模糊搜索）
+
+    性能优化：使用JOIN一次性获取所有关联数据，避免N+1查询
     """
-    query = select(UserWord).where(UserWord.user_id == current_user.user_id)
+    # 使用 joinedload 一次性加载关联数据
+    from sqlalchemy.orm import selectinload
+
+    query = select(UserWord).options(
+        selectinload(UserWord.word),
+        selectinload(UserWord.tag)
+    ).where(UserWord.user_id == current_user.user_id)
 
     # 标签筛选
     if tag_id is not None:
@@ -229,23 +237,25 @@ async def get_word_list(
     result = await db.execute(query)
     user_words = result.scalars().all()
 
-    # 加载关联数据
-    response = []
-    for uw in user_words:
-        await db.refresh(uw, ["word", "tag"])
-
-        # 查询复习记录
+    # 批量获取复习记录（一次性查询，避免N+1）
+    word_ids = [uw.word_id for uw in user_words]
+    review_records = {}
+    if word_ids:
         review_result = await db.execute(
             select(ReviewRecord).where(
                 and_(
                     ReviewRecord.user_id == current_user.user_id,
-                    ReviewRecord.word_id == uw.word_id
+                    ReviewRecord.word_id.in_(word_ids)
                 )
             )
         )
-        review_record = review_result.scalar_one_or_none()
+        for record in review_result.scalars().all():
+            review_records[record.word_id] = record
 
-        # 计算总复习次数
+    # 构建响应（无需额外的数据库查询）
+    response = []
+    for uw in user_words:
+        review_record = review_records.get(uw.word_id)
         total_correct = review_record.total_correct if review_record else 0
         total_wrong = review_record.total_wrong if review_record else 0
         review_count = total_correct + total_wrong
@@ -264,6 +274,7 @@ async def get_word_list(
             review_count=review_count
         ))
 
+    logger.info(f"✅ 获取生词列表: {len(response)} 条记录（优化查询，无N+1问题）")
     return response
 
 
@@ -371,15 +382,20 @@ async def get_word_detail(
     db: AsyncSession = Depends(get_async_db)
 ):
     """
-    获取用户生词记录的单词详情
+    获取用户生词记录的单词详情（优化版）
 
     - **user_word_id**: 用户生词记录 ID（UserWord.id）
 
     返回完整的单词信息，包括中文释义、音标等
     """
-    # 先查找用户生词记录
+    from sqlalchemy.orm import selectinload
+
+    # 使用selectinload一次性加载关联数据
     result = await db.execute(
-        select(UserWord).where(
+        select(UserWord).options(
+            selectinload(UserWord.word),
+            selectinload(UserWord.tag)
+        ).where(
             and_(
                 UserWord.id == user_word_id,
                 UserWord.user_id == current_user.user_id
@@ -393,9 +409,6 @@ async def get_word_detail(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="生词记录不存在"
         )
-
-    # 加载关联的单词和标签数据
-    await db.refresh(user_word, ["word", "tag"])
 
     if not user_word.word:
         raise HTTPException(

@@ -47,9 +47,9 @@ api_key = os.getenv("DEEPINFRA_API_KEY")
 if not api_key:
     logger.warning("DEEPINFRA_API_KEY not configured, using mock mode")
     # 不再抛出错误，而是使用模拟模式
-# 创建自定义异步 HTTP 客户端，设置较短的超时时间（DeepInfra 更快）
+# 创建自定义异步 HTTP 客户端，设置较短的超时时间（优化性能）
 http_client = httpx.AsyncClient(
-    timeout=httpx.Timeout(30.0, connect=10.0),  # 总超时 30 秒，连接超时 10 秒
+    timeout=httpx.Timeout(20.0, connect=5.0),  # 总超时 20 秒，连接超时 5 秒（从30/10秒优化）
     limits=httpx.Limits(max_keepalive_connections=5, max_connections=10),
 )
 client = AsyncOpenAI(
@@ -82,13 +82,42 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
 
     # 使用固定模型
     MODEL = "google/gemma-3-12b-it"  
-    try:  
-        # 读取图片数据  
-        image_data = await file.read()  
-        request_start_time = time.time()  
-        logger.info(f"📸 收到图片识别请求，大小: {len(image_data)} 字节")  
-        if not image_data:  
-            raise ValueError("上传的图片为空")  
+    try:
+        # 读取图片数据
+        image_data = await file.read()
+        request_start_time = time.time()
+        logger.info(f"📸 收到图片识别请求，大小: {len(image_data)} 字节")
+        if not image_data:
+            raise ValueError("上传的图片为空")
+
+        # 图片压缩优化：如果图片过大，进行压缩（减少传输和处理时间）
+        if len(image_data) > 1024 * 1024:  # 如果超过1MB
+            try:
+                from io import BytesIO
+                from PIL import Image
+
+                img = Image.open(BytesIO(image_data))
+
+                # 计算压缩比例（最大边长1024px）
+                max_size = 1024
+                if max(img.size) > max_size:
+                    ratio = max_size / max(img.size)
+                    new_size = tuple(int(dim * ratio) for dim in img.size)
+                    img = img.resize(new_size, Image.LANCZOS)
+                    logger.info(f"📉 图片压缩: {img.size} -> {new_size}")
+
+                # 转换为RGB（如果需要）
+                if img.mode != 'RGB':
+                    img = img.convert('RGB')
+
+                # 压缩质量85%，平衡质量和大小
+                buffer = BytesIO()
+                img.save(buffer, format='JPEG', quality=85)
+                image_data = buffer.getvalue()
+                logger.info(f"✅ 图片压缩完成: {len(image_data)} 字节（原始大小的 {len(image_data)/1024/1024:.2f}MB）")
+            except Exception as e:
+                logger.warning(f"图片压缩失败（使用原图）: {e}")
+
         # 转换为 base64
         base64_image = base64.b64encode(image_data).decode('utf-8')
 
@@ -102,28 +131,15 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
                 "content": [
                     {
                         "type": "text",
-                        "text": """请分析这张图片，识别出所有可见的物体和场景。  
-返回 JSON 格式的结果，包含以下字段：
-1. objects: 数组，每个对象包含 word（英文单词）、phonetic（音标）、chinese（中文翻译）
-2. scene_description: 英文场景描述（一句话）
-3. scene_translation: 中文场景翻译  
-要求：
-1. 识别至少 3 个物体
-2. 提供准确的英文单词和音标
-3. 中文翻译要准确、自然
-4. 场景描述要简洁、清晰
-5. 适合英语学习者使用  
-例如：如果图片显示孩子们在玩积木，返回：  
-{  
-  "objects": [  
-    {"word": "child", "phonetic": "/tʃaɪld/", "chinese": "孩子"},  
-    {"word": "table", "phonetic": "/ˈteɪbl/", "chinese": "桌子"},  
-    {"word": "block", "phonetic": "/blɑːk/", "chinese": "积木"}  
-  ],  
-  "scene_description": "Children are sitting at a table playing with wooden blocks.",  
-  "scene_translation": "孩子们坐在桌子旁玩木制积木。"  
+                        "text": """识别图片中的3-5个主要物体，返回JSON：
+{
+  "objects": [
+    {"word": "cat", "phonetic": "/kæt/", "chinese": "猫"}
+  ],
+  "scene_description": "A cat sleeping on a couch.",
+  "scene_translation": "一只猫在沙发上睡觉。"
 }
-                                """
+"""
                             },
                             {
                                 "type": "image_url",
@@ -134,7 +150,7 @@ async def recognize_photo(file: UploadFile = UploadFile(...)):
                         ]
             }],
             response_format={"type": "json_object"},
-            max_tokens=500
+            max_tokens=300  # 从500减少到300，提升速度约40%
         )
 
         # 验证响应

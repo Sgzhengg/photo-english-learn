@@ -1,3 +1,4 @@
+import React, { useState, useEffect } from 'react'
 import { Camera, Loader2 } from 'lucide-react'
 import type { PhotoCaptureProps } from '../types'
 import { WordCard } from './WordCard'
@@ -13,6 +14,8 @@ export function PhotoCaptureResult({
   onSaveWord,
   onUnsaveWord,
 }: PhotoCaptureProps) {
+  const [captureStep, setCaptureStep] = React.useState<string>('');
+
   // 拍照/处理中状态
   if (isCapturing || !currentPhoto || currentPhoto.status === 'processing') {
     return (
@@ -33,10 +36,27 @@ export function PhotoCaptureResult({
         </h2>
         <p className="text-slate-600 dark:text-slate-400 text-center max-w-sm" style={{ fontFamily: 'Inter, sans-serif' }}>
           {currentPhoto?.status === 'processing'
-            ? 'AI 正在分析图片内容，请稍候...'
+            ? `AI 正在分析图片...${captureStep ? `(${captureStep})` : ''}`
             : '点击下方按钮开始拍照识别'
           }
         </p>
+        {/* 进度提示 */}
+        {currentPhoto?.status === 'processing' && (
+          <div className="mt-4 space-y-2 text-sm text-slate-500 dark:text-slate-400" style={{ fontFamily: 'Inter, sans-serif' }}>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-green-500"></div>
+              <span>上传图片</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-blue-500 animate-pulse"></div>
+              <span>AI 识别中</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <div className="w-2 h-2 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+              <span>生成结果</span>
+            </div>
+          </div>
+        )}
         {onCapture && (
           <button
             onClick={onCapture}
